@@ -5,8 +5,8 @@
 import { useEffect, useState } from "react";
 import { useForm, useFieldArray, useWatch, FieldValues } from "react-hook-form";
 import { useRouter } from "next/navigation";
-import { pdf } from '@react-pdf/renderer';
-import { PlantillaPDF } from './PlantillaPDF';
+import { pdf } from "@react-pdf/renderer";
+import { PlantillaPDF } from "./PlantillaPDF";
 
 interface AsignaturaData {
   carrera: string;
@@ -19,7 +19,6 @@ interface AsignaturaData {
   reprobados: string;
   tiene_pae: boolean;
   pae_evidencia: any;
-
   resultados_tabla: string;
   resultados_actividades: string;
   res_instrumento: string;
@@ -46,7 +45,6 @@ interface AsignaturaData {
   res_evidencia: any;
   hab_evidencia: any;
   tac_evidencia: any;
-  // 👉 NUEVO: Tipos para los campos extras de "Otros"
   habilidades_otros?: string;
   tac_otros?: string;
 }
@@ -89,9 +87,12 @@ export default function NuevoInformePage() {
   const [userId, setUserId] = useState<string>("");
   const [esSoloLectura, setEsSoloLectura] = useState(false);
 
-  const { register, handleSubmit, control, reset, watch} = useForm<FieldValues>({
-    defaultValues: { asignaturas: [], titulaciones_asignadas: [] },
-  });
+  const [materiaActiva, setMateriaActiva] = useState(0);
+
+  const { register, handleSubmit, control, reset, watch } =
+    useForm<FieldValues>({
+      defaultValues: { asignaturas: [], titulaciones_asignadas: [] },
+    });
 
   const { fields } = useFieldArray({ control, name: "asignaturas" });
   const watchAsignaturas = useWatch({
@@ -199,7 +200,7 @@ export default function NuevoInformePage() {
           docente_nombre: data.docente_nombre,
           fecha_elaboracion: data.fecha_elaboracion,
           firma_docente: data.firma_docente,
-          asignaturas: data.asignaturas, 
+          asignaturas: data.asignaturas,
         },
         actividades: {
           titulacion: data.titulaciones_asignadas,
@@ -266,7 +267,6 @@ export default function NuevoInformePage() {
         },
       };
 
-      // Enviamos directamente el JSON al backend
       const respuesta = await fetch("http://localhost:4000/informes", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -275,8 +275,6 @@ export default function NuevoInformePage() {
 
       if (respuesta.ok) {
         alert("¡Informe guardado con éxito en MongoDB!");
-        // Descomenta la siguiente línea si quieres que lo redirija automáticamente
-        // router.push("/dashboard/docente");
       } else {
         alert("Hubo un error al guardar el informe.");
       }
@@ -335,20 +333,13 @@ export default function NuevoInformePage() {
 
   const descargarPDF = async () => {
     try {
-      // 1. Obtenemos todos los valores actuales del formulario en tiempo real
       const valoresActuales = watch();
-
-      // 2. Generamos el archivo usando la plantilla
       const blob = await pdf(<PlantillaPDF datos={valoresActuales} />).toBlob();
-
-      // 3. Creamos un enlace invisible para forzar la descarga en el navegador
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
       link.download = `Informe_${valoresActuales.docente_nombre || "Docente"}.pdf`;
       link.click();
-
-      // Limpiamos la URL temporal
       URL.revokeObjectURL(url);
     } catch (error) {
       console.error("Error al generar el PDF:", error);
@@ -446,7 +437,6 @@ export default function NuevoInformePage() {
               <div
                 style={{
                   display: "grid",
-                  // 👉 NUEVO: Se movió el 50px de PAE al final de la columna
                   gridTemplateColumns:
                     "40px 1.5fr 2fr 70px 70px 70px 70px 70px 70px 50px",
                   gap: "5px",
@@ -466,7 +456,6 @@ export default function NuevoInformePage() {
                 <div>% Asist.</div>
                 <div>% Aprob.</div>
                 <div>% Reprob.</div>
-                {/* 👉 NUEVO: Cabecera PAE al final */}
                 <div style={{ color: "#0284c7" }}>PAE</div>
               </div>
 
@@ -475,7 +464,6 @@ export default function NuevoInformePage() {
                   key={item.id}
                   style={{
                     display: "grid",
-                    // 👉 NUEVO: Se aplica la misma cuadrícula a los datos
                     gridTemplateColumns:
                       "40px 1.5fr 2fr 70px 70px 70px 70px 70px 70px 50px",
                     gap: "5px",
@@ -546,7 +534,6 @@ export default function NuevoInformePage() {
                       style={inputStyle}
                     />
                   </div>
-                  {/* 👉 NUEVO: Checkbox de PAE movido al final */}
                   <div style={{ display: "flex", justifyContent: "center" }}>
                     <input
                       {...register(`asignaturas.${index}.tiene_pae`)}
@@ -561,12 +548,61 @@ export default function NuevoInformePage() {
           </div>
         </fieldset>
 
+        {/* ================= FILTRO DE MATERIAS (PESTAÑAS) ================= */}
+        {fields.length > 0 && (
+          <div
+            style={{
+              display: "flex",
+              gap: "10px",
+              marginBottom: "20px",
+              marginTop: "20px",
+              overflowX: "auto",
+              paddingBottom: "10px",
+            }}
+          >
+            {fields.map((campo, index) => {
+              const nombreMateria =
+                watchAsignaturas[index]?.materia || `Asignatura ${index + 1}`;
+
+              return (
+                <button
+                  key={`tab-${campo.id}`}
+                  type="button"
+                  onClick={() => setMateriaActiva(index)}
+                  style={{
+                    padding: "12px 20px",
+                    backgroundColor:
+                      materiaActiva === index ? "#3498db" : "#f3f4f6",
+                    color: materiaActiva === index ? "white" : "#4b5563",
+                    border: materiaActiva === index ? "none" : "1px solid #d1d5db",
+                    borderRadius: "6px",
+                    cursor: "pointer",
+                    fontWeight: materiaActiva === index ? "bold" : "normal",
+                    whiteSpace: "nowrap",
+                    transition: "all 0.2s ease",
+                    boxShadow:
+                      materiaActiva === index
+                        ? "0 4px 6px rgba(52, 152, 219, 0.3)"
+                        : "none",
+                  }}
+                >
+                  {nombreMateria}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
         {/* ================= SECCIÓN 2 (EVALUACIÓN POR MATERIA) ================= */}
         {fields.map((item, index) => (
           <fieldset
             key={`eval-${item.id}`}
             disabled={esSoloLectura}
-            style={{ ...fieldsetStyle, borderColor: "#3498db" }}
+            style={{
+              ...fieldsetStyle,
+              borderColor: "#3498db",
+              display: materiaActiva === index ? "block" : "none",
+            }}
           >
             <legend
               style={{
@@ -604,7 +640,6 @@ export default function NuevoInformePage() {
               </div>
             </div>
 
-            {/* 2.1 Resultados de Aprendizaje */}
             <div style={subTitleStyle}>
               2.1. Resultados de Aprendizaje Evaluados
             </div>
@@ -695,7 +730,6 @@ export default function NuevoInformePage() {
               />
             </div>
 
-            {/* 2.2 Habilidades Blandas */}
             <div style={subTitleStyle}>
               2.2. Habilidades Blandas Implementadas
             </div>
@@ -713,7 +747,6 @@ export default function NuevoInformePage() {
               ))}
             </div>
 
-            {/* 👉 NUEVO: Renderizado condicional si marca "Otros" en Habilidades */}
             {watchAsignaturas[index]?.habilidades_tabla?.includes("Otros") && (
               <div
                 style={{
@@ -823,7 +856,6 @@ export default function NuevoInformePage() {
               />
             </div>
 
-            {/* 2.3 TAC */}
             <div style={subTitleStyle}>2.3. TAC Implementadas</div>
             <label>Herramienta TAC:</label>
             <textarea
@@ -845,7 +877,6 @@ export default function NuevoInformePage() {
               ))}
             </div>
 
-            {/* 👉 NUEVO: Renderizado condicional si marca "Otros" en TAC */}
             {watchAsignaturas[index]?.tac_tabla?.includes("Otros") && (
               <div
                 style={{
@@ -1365,7 +1396,7 @@ export default function NuevoInformePage() {
           </div>
         </fieldset>
 
-        {/* ================= SECCIÓN 4 ================= */}
+        {/* ================= SECCIÓN 5 ================= */}
         <fieldset
           disabled={esSoloLectura}
           style={{ ...fieldsetStyle, borderColor: "#e67e22" }}
@@ -1431,9 +1462,7 @@ export default function NuevoInformePage() {
               />
             </div>
             <div>
-              <label style={{ fontSize: "0.8em", color: "#555" }}>
-                Estado:
-              </label>
+              <label style={{ fontSize: "0.8em", color: "#555" }}>Estado:</label>
               <input
                 {...register("vinc_estado")}
                 type="text"
@@ -1683,7 +1712,7 @@ export default function NuevoInformePage() {
           </div>
         </fieldset>
 
-        {/* ================= SECCIÓN 5 ================= */}
+        {/* ================= SECCIÓN 6 ================= */}
         <fieldset
           disabled={esSoloLectura}
           style={{ ...fieldsetStyle, borderColor: "#e67e22" }}
@@ -1865,7 +1894,7 @@ export default function NuevoInformePage() {
           </div>
         </fieldset>
 
-        {/* ================= SECCIÓN 6 ================= */}
+        {/* ================= SECCIÓN 7 ================= */}
         <fieldset disabled={esSoloLectura} style={fieldsetStyle}>
           <legend style={legendStyle}>7. EVIDENCIAS GENERALES Y CIERRE</legend>
           <label>Evidencias generales:</label>
