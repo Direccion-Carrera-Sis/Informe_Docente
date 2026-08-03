@@ -89,6 +89,22 @@ export default function NuevoInformePage() {
 
   const [materiaActiva, setMateriaActiva] = useState(0);
 
+  const [informeId, setInformeId] = useState<string | null>(null);
+
+  // Estado para controlar qué acordeones están abiertos (true) o cerrados (false)
+  const [acordeon, setAcordeon] = useState({
+    sec3: false, // Titulación (cerrado por defecto)
+    sec4: false, // Prácticas (cerrado por defecto)
+    sec5: false, // Vinculación (cerrado por defecto)
+    sec6: false, // Investigación (cerrado por defecto)
+    sec7: false, // Cierre y Evidencias (ABIERTO por defecto para ver el botón de Guardar fácilmente)
+  });
+
+  // Función que abre/cierra una sección específica
+  const toggleAcordeon = (seccion: keyof typeof acordeon) => {
+    setAcordeon((prev) => ({ ...prev, [seccion]: !prev[seccion] }));
+  };
+
   const { register, handleSubmit, control, reset, watch } =
     useForm<FieldValues>({
       defaultValues: { asignaturas: [], titulaciones_asignadas: [] },
@@ -101,24 +117,161 @@ export default function NuevoInformePage() {
     defaultValue: [],
   });
 
-  const { fields: camposTitulacion } = useFieldArray({
+  const {
+    fields: camposTitulacion,
+    append: appendTitulacion,
+    remove: removeTitulacion,
+  } = useFieldArray({ control, name: "titulaciones_asignadas" });
+
+  const {
+    fields: camposLector,
+    append: appendLector,
+    remove: removeLector,
+  } = useFieldArray({
     control,
-    name: "titulaciones_asignadas",
+    name: "titulaciones_lector",
   });
 
+  const {
+    fields: camposPracticas,
+    append: appendPractica,
+    remove: removePractica,
+  } = useFieldArray({
+    control,
+    name: "practicas",
+  });
+
+  const {
+    fields: camposPublicaciones,
+    append: appendPublicacion,
+    remove: removePublicacion,
+  } = useFieldArray({
+    control,
+    name: "publicaciones",
+  });
+
+  const {
+    fields: camposProyectosInv,
+    append: appendProyectoInv,
+    remove: removeProyectoInv,
+  } = useFieldArray({
+    control,
+    name: "proyectos_investigacion",
+  });
+
+  // 1. Modificamos el useEffect para capturar el ID de forma nativa
   useEffect(() => {
     const usuarioGuardado = localStorage.getItem("usuario");
 
     if (usuarioGuardado) {
       const datosUsuario = JSON.parse(usuarioGuardado);
-      console.log("👤 Usuario en navegador:", datosUsuario);
       setUserId(datosUsuario.cedula);
       setEsSoloLectura(datosUsuario.rol !== "docente");
-      cargarDatosPrecargados(datosUsuario);
+
+      // Captura infalible del ID desde la URL
+      const urlParams = new URLSearchParams(window.location.search);
+      const idDeLaUrl = urlParams.get("id");
+
+      if (idDeLaUrl) {
+        console.log("Modo Edición activado para el ID:", idDeLaUrl);
+        setInformeId(idDeLaUrl);
+        cargarInformeExistente(idDeLaUrl);
+      } else {
+        console.log("Modo Creación activado");
+        cargarDatosPrecargados(datosUsuario);
+      }
     } else {
       router.push("/");
     }
-  }, []);
+  }, []); // Quitamos idEdicion de los corchetes
+
+  // 2. Mejoramos la función de carga para manejar errores y evitar vacíos
+  const cargarInformeExistente = async (id: string) => {
+    try {
+      const res = await fetch(`http://localhost:4000/informes/${id}`);
+
+      if (res.ok) {
+        const bd = await res.json();
+        console.log("Datos del borrador descargados:", bd);
+
+        reset({
+          docente_nombre: bd.datosEstructurales?.docente_nombre || "",
+          periodo: bd.periodoAcademico || "2026-2026",
+          firma_docente: bd.datosEstructurales?.firma_docente || "",
+          fecha_elaboracion: bd.datosEstructurales?.fecha_elaboracion || "",
+          // Si por alguna razón el array viene vacío, evitamos que se rompan las pestañas
+          asignaturas: bd.datosEstructurales?.asignaturas?.length
+            ? bd.datosEstructurales.asignaturas
+            : [],
+          titulaciones_asignadas: bd.actividades?.titulacion || [],
+          titulaciones_lector: bd.actividades?.lector || [],
+
+          practicas_estudiante: bd.actividades?.practicas?.estudiante || "",
+          prac_tipo_identificacion:
+            bd.actividades?.practicas?.tipo_identificacion || "",
+          prac_identificacion: bd.actividades?.practicas?.identificacion || "",
+          prac_nombre_institucion: bd.actividades?.practicas?.institucion || "",
+          prac_tipo_institucion:
+            bd.actividades?.practicas?.tipo_institucion || "",
+          prac_fecha_inicio: bd.actividades?.practicas?.fecha_inicio || "",
+          prac_fecha_fin: bd.actividades?.practicas?.fecha_fin || "",
+          prac_numero_horas: bd.actividades?.practicas?.horas || "",
+          prac_codigo_ies: bd.actividades?.practicas?.codigo_ies || "",
+          prac_codigo_carrera: bd.actividades?.practicas?.codigo_carrera || "",
+          prac_ciudad_carrera: bd.actividades?.practicas?.ciudad || "",
+          prac_campo_especifico: bd.actividades?.practicas?.campo || "",
+          prac_id_docente: bd.actividades?.practicas?.id_docente || "",
+
+          vinc_nombre: bd.actividades?.vinculacion?.nombre || "",
+          vinc_codigo_proyecto: bd.actividades?.vinculacion?.codigo || "",
+          vinc_tipo_proyecto: bd.actividades?.vinculacion?.tipo || "",
+          vinc_programa: bd.actividades?.vinculacion?.programa || "",
+          vinc_estado: bd.actividades?.vinculacion?.estado || "",
+          vinc_objetivo: bd.actividades?.vinculacion?.objetivo || "",
+          vinc_facultad: bd.actividades?.vinculacion?.facultad || "",
+          vinc_fecha_inicio: bd.actividades?.vinculacion?.fecha_inicio || "",
+          vinc_fecha_fin_planeado:
+            bd.actividades?.vinculacion?.fecha_fin_plan || "",
+          vinc_fecha_fin_real:
+            bd.actividades?.vinculacion?.fecha_fin_real || "",
+          vinc_coordinador: bd.actividades?.vinculacion?.coordinador || "",
+          vinc_correo_coordinador: bd.actividades?.vinculacion?.correo || "",
+          vinc_telefono_coordinador:
+            bd.actividades?.vinculacion?.telefono || "",
+          vinc_linea_investigacion:
+            bd.actividades?.vinculacion?.linea_inv || "",
+          vinc_alcance: bd.actividades?.vinculacion?.alcance || "",
+          vinc_impacto_social:
+            bd.actividades?.vinculacion?.impacto_social || "",
+          vinc_impacto_cientifico:
+            bd.actividades?.vinculacion?.impacto_cientifico || "",
+          vinc_impacto_economico:
+            bd.actividades?.vinculacion?.impacto_economico || "",
+          vinc_impacto_politico:
+            bd.actividades?.vinculacion?.impacto_politico || "",
+          vinc_otro_impacto: bd.actividades?.vinculacion?.otro_impacto || "",
+          vinc_financiamiento:
+            bd.actividades?.vinculacion?.financiamiento || "",
+          vinc_presupuesto_plan:
+            bd.actividades?.vinculacion?.p_planificado || "",
+          vinc_presupuesto_ejec: bd.actividades?.vinculacion?.p_ejecutado || "",
+          vinc_horas: bd.actividades?.vinculacion?.horas || "",
+          vinc_tipo_participante:
+            bd.actividades?.vinculacion?.tipo_participante || "",
+          vinc_grupo_inv: bd.actividades?.vinculacion?.grupo_inv || "",
+
+          publicaciones: Array.isArray(bd.actividades?.investigacion?.publicaciones) ? bd.actividades.investigacion.publicaciones : [],
+          proyectos_investigacion: Array.isArray(bd.actividades?.investigacion?.proyectos) ? bd.actividades.investigacion.proyectos : [],
+
+          designaciones: bd.designaciones || "",
+        });
+      } else {
+        alert("El backend no pudo encontrar este informe para editarlo.");
+      }
+    } catch (error) {
+      console.error("Error al cargar el informe:", error);
+    }
+  };
 
   const cargarDatosPrecargados = async (datosUsuario: any) => {
     try {
@@ -185,7 +338,7 @@ export default function NuevoInformePage() {
         titulaciones_asignadas: titulacionesFormateadas,
       });
     } catch (err) {
-      console.error("❌ Error de red al comunicarse con el backend:", err);
+      console.error("Error de red al comunicarse con el backend:", err);
     }
   };
 
@@ -194,7 +347,7 @@ export default function NuevoInformePage() {
     try {
       const payload = {
         docenteId: userId,
-        periodoAcademico: data.periodo || "2026-2027",
+        periodoAcademico: data.periodo || "2026-2026",
         estado: "Borrador",
         datosEstructurales: {
           docente_nombre: data.docente_nombre,
@@ -204,21 +357,8 @@ export default function NuevoInformePage() {
         },
         actividades: {
           titulacion: data.titulaciones_asignadas,
-          practicas: {
-            estudiante: data.practicas_estudiante,
-            id_docente: data.prac_id_docente,
-            identificacion: data.prac_identificacion,
-            tipo_identificacion: data.prac_tipo_identificacion,
-            institucion: data.prac_nombre_institucion,
-            tipo_institucion: data.prac_tipo_institucion,
-            fecha_inicio: data.prac_fecha_inicio,
-            fecha_fin: data.prac_fecha_fin,
-            horas: data.prac_numero_horas,
-            codigo_ies: data.prac_codigo_ies,
-            codigo_carrera: data.prac_codigo_carrera,
-            ciudad: data.prac_ciudad_carrera,
-            campo: data.prac_campo_especifico,
-          },
+          lector: data.titulaciones_lector,
+          practicas: data.practicas,
           vinculacion: {
             nombre: data.vinc_nombre,
             codigo: data.vinc_codigo_proyecto,
@@ -248,33 +388,37 @@ export default function NuevoInformePage() {
             grupo_inv: data.vinc_grupo_inv,
           },
           investigacion: {
-            titulo: data.inv_titulo,
-            nombres: data.inv_nombres,
-            codigo_ies: data.inv_codigo_ies,
-            tipo_pub: data.inv_tipo_publicacion,
-            tipo_articulo: data.inv_tipo_articulo,
-            codigo_pub: data.inv_codigo_publicacion,
-            base_indexada: data.inv_base_indexada,
-            issn: data.inv_issn,
-            revista: data.inv_revista,
-            fecha_pub: data.inv_fecha_pub,
-            cargo: data.inv_cargo,
-            facultad: data.inv_facultad,
-            intercultural: data.inv_intercultural,
-            link_pub: data.inv_link_pub,
-            link_revista: data.inv_link_revista,
+            publicaciones: data.publicaciones,
+            proyectos: data.proyectos_investigacion,
           },
         },
+        designaciones: data.designaciones,
       };
 
-      const respuesta = await fetch("http://localhost:4000/informes", {
-        method: "POST",
+      const url = informeId
+        ? `http://localhost:4000/informes/${informeId}`
+        : "http://localhost:4000/informes";
+
+      const metodo = informeId ? "PUT" : "POST";
+
+      const respuesta = await fetch(url, {
+        method: metodo,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
 
       if (respuesta.ok) {
-        alert("¡Informe guardado con éxito en MongoDB!");
+        const resultado = await respuesta.json();
+
+        if (!informeId && resultado._id) {
+          setInformeId(resultado._id);
+        }
+
+        alert(
+          informeId
+            ? "¡Informe actualizado correctamente!"
+            : "¡Informe guardado con éxito en MongoDB!",
+        );
       } else {
         alert("Hubo un error al guardar el informe.");
       }
@@ -574,7 +718,8 @@ export default function NuevoInformePage() {
                     backgroundColor:
                       materiaActiva === index ? "#3498db" : "#f3f4f6",
                     color: materiaActiva === index ? "white" : "#4b5563",
-                    border: materiaActiva === index ? "none" : "1px solid #d1d5db",
+                    border:
+                      materiaActiva === index ? "none" : "1px solid #d1d5db",
                     borderRadius: "6px",
                     cursor: "pointer",
                     fontWeight: materiaActiva === index ? "bold" : "normal",
@@ -648,30 +793,35 @@ export default function NuevoInformePage() {
               {...register(`asignaturas.${index}.resultados_tabla`)}
               rows={3}
               style={{ ...inputStyle, marginBottom: "10px" }}
+              placeholder="Aplica conceptos de Arquitectura de Computadores en la resolución de problemas."
             ></textarea>
             <label>Criterios evaluados:</label>
             <textarea
               {...register(`asignaturas.${index}.res_criterios`)}
               rows={2}
               style={{ ...inputStyle, marginBottom: "10px" }}
+              placeholder="Aplicación práctica, Comprensión conceptual, Análisis de resultados"
             ></textarea>
             <label>Instrumento de evaluación:</label>
             <textarea
               {...register(`asignaturas.${index}.res_instrumento`)}
               rows={2}
               style={{ ...inputStyle, marginBottom: "10px" }}
+              placeholder="Exámenes, Tareas, Proyectos"
             ></textarea>
             <label>Actividades aplicadas:</label>
             <textarea
               {...register(`asignaturas.${index}.resultados_actividades`)}
               rows={2}
               style={{ ...inputStyle, marginBottom: "10px" }}
+              placeholder="Actividades de aula, Trabajos prácticos, Proyectos de investigación"
             ></textarea>
             <label>Resultados obtenidos (Logro de aprendizaje):</label>
             <textarea
               {...register(`asignaturas.${index}.resultados_logro`)}
               rows={2}
               style={{ ...inputStyle, marginBottom: "10px" }}
+              placeholder="Desarrollo de proyectos integradores / Evaluaciones prácticas y teóricas / Uso de simuladores y herramientas digitales (TAC) / Resolución de problemas en clase / Actividades en aula virtual, etc"
             ></textarea>
 
             <label style={{ fontWeight: "bold", color: "#555" }}>
@@ -690,18 +840,21 @@ export default function NuevoInformePage() {
                 {...register(`asignaturas.${index}.res_acciones`)}
                 rows={2}
                 style={{ ...inputStyle, marginBottom: "8px" }}
+                placeholder="Acciones para mejorar el desempeño..."
               ></textarea>
               <label>Propuestas:</label>
               <textarea
                 {...register(`asignaturas.${index}.res_propuestas`)}
                 rows={2}
                 style={{ ...inputStyle, marginBottom: "8px" }}
+                placeholder="Propuestas para mejorar el desempeño..."
               ></textarea>
               <label>Cumplimiento:</label>
               <textarea
                 {...register(`asignaturas.${index}.res_cumplimiento`)}
                 rows={2}
                 style={{ ...inputStyle, marginBottom: "8px" }}
+                placeholder="Se cumplió el 100% de los resultados de aprendizaje planificados en el sílabo / Se cumplió la mayoría de los resultados, con ajustes en ciertas actividades por tiempo "
               ></textarea>
             </div>
             <div
@@ -780,24 +933,28 @@ export default function NuevoInformePage() {
               {...register(`asignaturas.${index}.hab_criterios`)}
               rows={2}
               style={{ ...inputStyle, marginBottom: "10px" }}
+              placeholder="Criterios de evaluación para las habilidades blandas"
             ></textarea>
             <label>Instrumento:</label>
             <textarea
               {...register(`asignaturas.${index}.hab_instrumento`)}
               rows={2}
               style={{ ...inputStyle, marginBottom: "10px" }}
+              placeholder="Instrumento de evaluación para las habilidades blandas"
             ></textarea>
             <label>Actividades aplicadas:</label>
             <textarea
               {...register(`asignaturas.${index}.habilidades_actividades`)}
               rows={2}
               style={{ ...inputStyle, marginBottom: "10px" }}
+              placeholder="Actividades aplicadas para desarrollar las habilidades blandas"
             ></textarea>
             <label>Resultados evidenciados:</label>
             <textarea
               {...register(`asignaturas.${index}.habilidades_logro`)}
               rows={2}
               style={{ ...inputStyle, marginBottom: "10px" }}
+              placeholder="Resultados evidenciados en el desarrollo de las habilidades blandas"
             ></textarea>
 
             <label style={{ fontWeight: "bold", color: "#555" }}>
@@ -816,18 +973,21 @@ export default function NuevoInformePage() {
                 {...register(`asignaturas.${index}.hab_acciones`)}
                 rows={2}
                 style={{ ...inputStyle, marginBottom: "8px" }}
+                placeholder="Acciones para mejorar el desempeño..."
               ></textarea>
               <label>Propuestas:</label>
               <textarea
                 {...register(`asignaturas.${index}.hab_propuestas`)}
                 rows={2}
                 style={{ ...inputStyle, marginBottom: "8px" }}
+                placeholder="Propuestas para mejorar el desempeño..."
               ></textarea>
               <label>Cumplimiento:</label>
               <textarea
                 {...register(`asignaturas.${index}.hab_cumplimiento`)}
                 rows={2}
                 style={{ ...inputStyle, marginBottom: "8px" }}
+                placeholder="Cumplimiento de las acciones y propuestas implementadas"
               ></textarea>
             </div>
             <div
@@ -862,6 +1022,7 @@ export default function NuevoInformePage() {
               {...register(`asignaturas.${index}.tac_herramienta`)}
               rows={2}
               style={{ ...inputStyle, marginBottom: "10px" }}
+              placeholder="Herramienta TAC utilizada en la enseñanza"
             ></textarea>
             <div style={checkboxGridStyle}>
               {tacOpciones.map((opcion) => (
@@ -910,12 +1071,14 @@ export default function NuevoInformePage() {
               {...register(`asignaturas.${index}.tac_actividades`)}
               rows={2}
               style={{ ...inputStyle, marginBottom: "10px" }}
+              placeholder="Actividades desarrolladas con la herramienta TAC"
             ></textarea>
             <label>Resultados obtenidos:</label>
             <textarea
               {...register(`asignaturas.${index}.tac_logro`)}
               rows={2}
               style={{ ...inputStyle, marginBottom: "10px" }}
+              placeholder="Resultados obtenidos con la herramienta TAC"
             ></textarea>
 
             <label style={{ fontWeight: "bold", color: "#555" }}>
@@ -934,18 +1097,21 @@ export default function NuevoInformePage() {
                 {...register(`asignaturas.${index}.tac_acciones`)}
                 rows={2}
                 style={{ ...inputStyle, marginBottom: "8px" }}
+                placeholder="Acciones para mejorar el desempeño..."
               ></textarea>
               <label>Propuestas:</label>
               <textarea
                 {...register(`asignaturas.${index}.tac_propuestas`)}
                 rows={2}
                 style={{ ...inputStyle, marginBottom: "8px" }}
+                placeholder="Propuestas para mejorar el desempeño..."
               ></textarea>
               <label>Cumplimiento:</label>
               <textarea
                 {...register(`asignaturas.${index}.tac_cumplimiento`)}
                 rows={2}
                 style={{ ...inputStyle, marginBottom: "8px" }}
+                placeholder="Cumplimiento de las acciones y propuestas implementadas"
               ></textarea>
             </div>
             <div
@@ -1016,107 +1182,100 @@ export default function NuevoInformePage() {
           </fieldset>
         ))}
 
-        {/* ================= SECCIÓN 3: TITULACIÓN (DINÁMICA) ================= */}
+        {/* ================= SECCIÓN 3: TITULACIÓN ================= */}
         <fieldset
           disabled={esSoloLectura}
           style={{ ...fieldsetStyle, borderColor: "#e67e22" }}
         >
-          <legend style={{ ...legendStyle, color: "#e67e22" }}>
+          <legend
+            onClick={() => toggleAcordeon("sec3")}
+            style={{
+              ...legendStyle,
+              color: "#e67e22",
+              cursor: "pointer",
+              userSelect: "none",
+            }}
+          >
             3. TRABAJOS DE TITULACIÓN
+            <span
+              style={{
+                marginLeft: "15px",
+                fontSize: "0.8em",
+                backgroundColor: "#fbdcbf",
+                padding: "4px 10px",
+                borderRadius: "12px",
+                color: "#d35400",
+              }}
+            >
+              {acordeon.sec3 ? "Ocultar ▲" : "Mostrar ▼"}
+            </span>
           </legend>
 
-          {camposTitulacion.length === 0 ? (
-            <p
-              style={{ color: "#555", fontStyle: "italic", padding: "10px 0" }}
-            >
-              No tienes trabajos de titulación asignados en este período.
-            </p>
-          ) : (
-            camposTitulacion.map((campo, index) => (
-              <div
-                key={campo.id}
+          {acordeon.sec3 && (
+            <div style={{ paddingTop: "10px" }}>
+              {/* ================= TUTOR DE TITULACIÓN ================= */}
+              <div style={{ ...subTitleStyle, color: "#d35400" }}>
+                Participación como Tutor de Titulación
+              </div>
+
+              <button
+                type="button"
+                onClick={() =>
+                  appendTitulacion({
+                    estudiante: "",
+                    mecanismo: "",
+                    tema: "",
+                    fecha_designacion: "",
+                    estado: "",
+                  })
+                }
                 style={{
-                  display: "flex",
-                  gap: "10px",
                   marginBottom: "15px",
-                  padding: "15px",
-                  backgroundColor: "#fef9f5",
-                  border: "1px solid #fbdcbf",
-                  borderRadius: "6px",
-                  flexWrap: "wrap",
+                  padding: "8px 15px",
+                  backgroundColor: "#e67e22",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "4px",
+                  cursor: "pointer",
                 }}
               >
-                <div style={{ flex: "1 1 250px" }}>
-                  <label
-                    style={{
-                      fontSize: "0.85em",
-                      color: "#555",
-                      fontWeight: "bold",
-                    }}
-                  >
-                    Estudiante / Mecanismo
-                  </label>
-                  <input
-                    {...register(
-                      `titulaciones_asignadas.${index}.estudiante` as const,
-                    )}
-                    readOnly
-                    title="Viene del sistema central"
-                    style={{
-                      ...inputStyle,
-                      backgroundColor: "#e5e7eb",
-                      marginBottom: "5px",
-                      width: "100%",
-                    }}
-                  />
-                  <input
-                    {...register(
-                      `titulaciones_asignadas.${index}.mecanismo` as const,
-                    )}
-                    readOnly
-                    style={{
-                      ...inputStyle,
-                      backgroundColor: "#e5e7eb",
-                      fontSize: "0.8em",
-                      width: "100%",
-                    }}
-                  />
-                </div>
+                + Añadir Proyecto como Tutor
+              </button>
 
-                <div style={{ flex: "2 1 300px" }}>
-                  <label
-                    style={{
-                      fontSize: "0.85em",
-                      color: "#555",
-                      fontWeight: "bold",
-                    }}
-                  >
-                    Tema de Titulación
-                  </label>
-                  <textarea
-                    {...register(
-                      `titulaciones_asignadas.${index}.tema` as const,
-                    )}
-                    readOnly
-                    style={{
-                      ...inputStyle,
-                      backgroundColor: "#e5e7eb",
-                      width: "100%",
-                      height: "70px",
-                      resize: "none",
-                    }}
-                  />
-                </div>
-
+              {camposTitulacion.map((campo, index) => (
                 <div
+                  key={campo.id}
                   style={{
-                    flex: "1 1 150px",
                     display: "flex",
-                    flexDirection: "column",
                     gap: "10px",
+                    marginBottom: "15px",
+                    padding: "15px",
+                    backgroundColor: "#fff",
+                    border: "1px solid #fbdcbf",
+                    borderRadius: "6px",
+                    flexWrap: "wrap",
+                    position: "relative",
                   }}
                 >
-                  <div>
+                  <button
+                    type="button"
+                    onClick={() => removeTitulacion(index)}
+                    style={{
+                      position: "absolute",
+                      top: "10px",
+                      right: "10px",
+                      background: "#c0392b",
+                      color: "#fff",
+                      border: "none",
+                      borderRadius: "3px",
+                      cursor: "pointer",
+                      padding: "4px 8px",
+                    }}
+                  >
+                    X Eliminar
+                  </button>
+
+                  <div style={{ flex: "1 1 250px", marginTop: "15px" }}>
                     <label
                       style={{
                         fontSize: "0.85em",
@@ -1124,17 +1283,19 @@ export default function NuevoInformePage() {
                         fontWeight: "bold",
                       }}
                     >
-                      Fecha Designación
+                      Estudiante
                     </label>
                     <input
                       {...register(
-                        `titulaciones_asignadas.${index}.fecha_designacion` as const,
+                        `titulaciones_asignadas.${index}.estudiante` as const,
                       )}
-                      type="date"
-                      style={{ ...inputStyle, width: "100%" }}
+                      placeholder="Nombre del estudiante"
+                      style={{
+                        ...inputStyle,
+                        marginBottom: "5px",
+                        width: "100%",
+                      }}
                     />
-                  </div>
-                  <div>
                     <label
                       style={{
                         fontSize: "0.85em",
@@ -1142,24 +1303,289 @@ export default function NuevoInformePage() {
                         fontWeight: "bold",
                       }}
                     >
-                      Estado
+                      Mecanismo
                     </label>
-                    <select
+                    <input
                       {...register(
-                        `titulaciones_asignadas.${index}.estado` as const,
+                        `titulaciones_asignadas.${index}.mecanismo` as const,
                       )}
+                      placeholder="Ej. Proyecto de Grado"
                       style={{ ...inputStyle, width: "100%" }}
+                    />
+                  </div>
+                  <div style={{ flex: "2 1 300px", marginTop: "15px" }}>
+                    <label
+                      style={{
+                        fontSize: "0.85em",
+                        color: "#555",
+                        fontWeight: "bold",
+                      }}
                     >
-                      <option value="">Seleccionar...</option>
-                      <option value="En desarrollo">En desarrollo</option>
-                      <option value="En revisión">En revisión</option>
-                      <option value="Aprobado">Aprobado</option>
-                      <option value="Sustentado">Sustentado</option>
-                    </select>
+                      Tema de Titulación
+                    </label>
+                    <textarea
+                      {...register(
+                        `titulaciones_asignadas.${index}.tema` as const,
+                      )}
+                      placeholder="Escriba el tema..."
+                      style={{
+                        ...inputStyle,
+                        width: "100%",
+                        height: "100px",
+                        resize: "none",
+                      }}
+                    />
+                  </div>
+                  <div
+                    style={{
+                      flex: "1 1 150px",
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "10px",
+                      marginTop: "15px",
+                    }}
+                  >
+                    <div>
+                      <label
+                        style={{
+                          fontSize: "0.85em",
+                          color: "#555",
+                          fontWeight: "bold",
+                        }}
+                      >
+                        Fecha Designación
+                      </label>
+                      <input
+                        {...register(
+                          `titulaciones_asignadas.${index}.fecha_designacion` as const,
+                        )}
+                        type="date"
+                        style={{ ...inputStyle, width: "100%" }}
+                      />
+                    </div>
+                    <div>
+                      <label
+                        style={{
+                          fontSize: "0.85em",
+                          color: "#555",
+                          fontWeight: "bold",
+                        }}
+                      >
+                        Estado
+                      </label>
+                      <select
+                        {...register(
+                          `titulaciones_asignadas.${index}.estado` as const,
+                        )}
+                        style={{ ...inputStyle, width: "100%" }}
+                      >
+                        <option value="">Seleccionar...</option>
+                        <option value="En desarrollo">En desarrollo</option>
+                        <option value="En revisión">En revisión</option>
+                        <option value="Aprobado">Aprobado</option>
+                        <option value="Sustentado">Sustentado</option>
+                      </select>
+                    </div>
                   </div>
                 </div>
+              ))}
+
+              {camposTitulacion.length === 0 && (
+                <p
+                  style={{
+                    color: "#555",
+                    fontStyle: "italic",
+                    padding: "0 0 15px 0",
+                  }}
+                >
+                  No hay proyectos de titulación asignados.
+                </p>
+              )}
+
+              {/* ================= LECTOR MANUAL ================= */}
+              <div
+                style={{
+                  ...subTitleStyle,
+                  marginTop: "25px",
+                  color: "#d35400",
+                }}
+              >
+                Participación como Docente Lector / Tribunal
               </div>
-            ))
+              <button
+                type="button"
+                onClick={() =>
+                  appendLector({
+                    estudiante: "",
+                    mecanismo: "",
+                    tema: "",
+                    fecha_designacion: "",
+                    estado: "",
+                  })
+                }
+                style={{
+                  marginBottom: "15px",
+                  padding: "8px 15px",
+                  backgroundColor: "#e67e22",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "4px",
+                  cursor: "pointer",
+                }}
+              >
+                + Añadir Proyecto como Lector
+              </button>
+
+              {camposLector.map((campo, index) => (
+                <div
+                  key={campo.id}
+                  style={{
+                    display: "flex",
+                    gap: "10px",
+                    marginBottom: "15px",
+                    padding: "15px",
+                    backgroundColor: "#fff",
+                    border: "1px dashed #e67e22",
+                    borderRadius: "6px",
+                    flexWrap: "wrap",
+                    position: "relative",
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => removeLector(index)}
+                    style={{
+                      position: "absolute",
+                      top: "10px",
+                      right: "10px",
+                      background: "#c0392b",
+                      color: "#fff",
+                      border: "none",
+                      borderRadius: "3px",
+                      cursor: "pointer",
+                      padding: "4px 8px",
+                    }}
+                  >
+                    X Eliminar
+                  </button>
+                  <div style={{ flex: "1 1 250px", marginTop: "15px" }}>
+                    <label
+                      style={{
+                        fontSize: "0.85em",
+                        color: "#555",
+                        fontWeight: "bold",
+                      }}
+                    >
+                      Estudiante
+                    </label>
+                    <input
+                      {...register(`titulaciones_lector.${index}.estudiante`)}
+                      style={{
+                        ...inputStyle,
+                        marginBottom: "5px",
+                        width: "100%",
+                      }}
+                      placeholder="Nombre del estudiante"
+                    />
+                    <label
+                      style={{
+                        fontSize: "0.85em",
+                        color: "#555",
+                        fontWeight: "bold",
+                      }}
+                    >
+                      Mecanismo
+                    </label>
+                    <input
+                      {...register(`titulaciones_lector.${index}.mecanismo`)}
+                      style={{ ...inputStyle, width: "100%" }}
+                      placeholder="Ej. Proyecto de Grado"
+                    />
+                  </div>
+                  <div style={{ flex: "2 1 300px", marginTop: "15px" }}>
+                    <label
+                      style={{
+                        fontSize: "0.85em",
+                        color: "#555",
+                        fontWeight: "bold",
+                      }}
+                    >
+                      Tema de Titulación
+                    </label>
+                    <textarea
+                      {...register(`titulaciones_lector.${index}.tema`)}
+                      style={{
+                        ...inputStyle,
+                        width: "100%",
+                        height: "100px",
+                        resize: "none",
+                      }}
+                      placeholder="Escriba el tema..."
+                    />
+                  </div>
+                  <div
+                    style={{
+                      flex: "1 1 150px",
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "10px",
+                      marginTop: "15px",
+                    }}
+                  >
+                    <div>
+                      <label
+                        style={{
+                          fontSize: "0.85em",
+                          color: "#555",
+                          fontWeight: "bold",
+                        }}
+                      >
+                        Fecha Designación
+                      </label>
+                      <input
+                        {...register(
+                          `titulaciones_lector.${index}.fecha_designacion`,
+                        )}
+                        type="date"
+                        style={{ ...inputStyle, width: "100%" }}
+                      />
+                    </div>
+                    <div>
+                      <label
+                        style={{
+                          fontSize: "0.85em",
+                          color: "#555",
+                          fontWeight: "bold",
+                        }}
+                      >
+                        Estado
+                      </label>
+                      <select
+                        {...register(`titulaciones_lector.${index}.estado`)}
+                        style={{ ...inputStyle, width: "100%" }}
+                      >
+                        <option value="">Seleccionar...</option>
+                        <option value="En revisión">En revisión</option>
+                        <option value="Aprobado">Aprobado</option>
+                        <option value="Sustentado">Sustentado</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              ))}
+
+              {camposLector.length === 0 && (
+                <p
+                  style={{
+                    color: "#555",
+                    fontStyle: "italic",
+                    padding: "0 0 10px 0",
+                  }}
+                >
+                  No hay proyectos como lector agregados.
+                </p>
+              )}
+            </div>
           )}
         </fieldset>
 
@@ -1168,232 +1594,226 @@ export default function NuevoInformePage() {
           disabled={esSoloLectura}
           style={{ ...fieldsetStyle, borderColor: "#8e44ad" }}
         >
-          <legend style={{ ...legendStyle, color: "#8e44ad" }}>
-            4. PRÁCTICAS PREPROFESIONALES (Tutor)
-          </legend>
-
-          <div
+          <legend
+            onClick={() => toggleAcordeon("sec4")}
             style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-              gap: "15px",
-              marginBottom: "10px",
+              ...legendStyle,
+              color: "#8e44ad",
+              cursor: "pointer",
+              userSelect: "none",
             }}
           >
-            <div>
-              <label
-                style={{
-                  fontSize: "0.85em",
-                  color: "#555",
-                  fontWeight: "bold",
-                }}
-              >
-                Nombre del Estudiante:
-              </label>
-              <input
-                {...register("practicas_estudiante")}
-                type="text"
-                style={inputStyle}
-              />
-            </div>
-            <div>
-              <label
-                style={{
-                  fontSize: "0.85em",
-                  color: "#555",
-                  fontWeight: "bold",
-                }}
-              >
-                Tipo Identificación:
-              </label>
-              <input
-                {...register("prac_tipo_identificacion")}
-                type="text"
-                style={inputStyle}
-              />
-            </div>
-            <div>
-              <label
-                style={{
-                  fontSize: "0.85em",
-                  color: "#555",
-                  fontWeight: "bold",
-                }}
-              >
-                Identificación:
-              </label>
-              <input
-                {...register("prac_identificacion")}
-                type="text"
-                style={inputStyle}
-              />
-            </div>
+            4. PRÁCTICAS PREPROFESIONALES (Tutor)
+            <span
+              style={{
+                marginLeft: "15px",
+                fontSize: "0.8em",
+                backgroundColor: "#e8daef",
+                padding: "4px 10px",
+                borderRadius: "12px",
+                color: "#6c3483",
+              }}
+            >
+              {acordeon.sec4 ? "Ocultar ▲" : "Mostrar ▼"}
+            </span>
+          </legend>
 
-            <div style={{ gridColumn: "1 / -1", display: "flex", gap: "15px" }}>
-              <div style={{ flex: 2 }}>
-                <label
+          {acordeon.sec4 && (
+            <div style={{ paddingTop: "10px" }}>
+              <button
+                type="button"
+                onClick={() =>
+                  appendPractica({
+                    estudiante: "",
+                    tipo_identificacion: "",
+                    identificacion: "",
+                    empresa: "",
+                    tipo_empresa: "",
+                    fecha_designacion: "",
+                  })
+                }
+                style={{
+                  marginBottom: "15px",
+                  padding: "8px 15px",
+                  backgroundColor: "#8e44ad",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "4px",
+                  cursor: "pointer",
+                }}
+              >
+                + Añadir Estudiante
+              </button>
+
+              {camposPracticas.map((campo, index) => (
+                <div
+                  key={campo.id}
                   style={{
-                    fontSize: "0.85em",
-                    color: "#555",
-                    fontWeight: "bold",
+                    display: "flex",
+                    gap: "10px",
+                    marginBottom: "15px",
+                    padding: "15px",
+                    backgroundColor: "#fff",
+                    border: "1px dashed #8e44ad",
+                    borderRadius: "6px",
+                    flexWrap: "wrap",
+                    position: "relative",
                   }}
                 >
-                  Nombre Institución Receptora:
-                </label>
-                <input
-                  {...register("prac_nombre_institucion")}
-                  type="text"
-                  style={inputStyle}
-                />
-              </div>
-              <div style={{ flex: 1 }}>
-                <label
+                  <button
+                    type="button"
+                    onClick={() => removePractica(index)}
+                    style={{
+                      position: "absolute",
+                      top: "10px",
+                      right: "10px",
+                      background: "#c0392b",
+                      color: "#fff",
+                      border: "none",
+                      borderRadius: "3px",
+                      cursor: "pointer",
+                      padding: "4px 8px",
+                    }}
+                  >
+                    X Eliminar
+                  </button>
+
+                  <div
+                    style={{
+                      flex: "1 1 100%",
+                      display: "grid",
+                      gridTemplateColumns:
+                        "repeat(auto-fit, minmax(200px, 1fr))",
+                      gap: "15px",
+                      marginTop: "15px",
+                    }}
+                  >
+                    <div>
+                      <label
+                        style={{
+                          fontSize: "0.85em",
+                          color: "#555",
+                          fontWeight: "bold",
+                        }}
+                      >
+                        Estudiante:
+                      </label>
+                      <input
+                        {...register(`practicas.${index}.estudiante`)}
+                        type="text"
+                        style={inputStyle}
+                        placeholder="Nombre completo"
+                      />
+                    </div>
+
+                    <div>
+                      <label
+                        style={{
+                          fontSize: "0.85em",
+                          color: "#555",
+                          fontWeight: "bold",
+                        }}
+                      >
+                        Tipo Identificación:
+                      </label>
+                      <select
+                        {...register(`practicas.${index}.tipo_identificacion`)}
+                        style={{ ...inputStyle, backgroundColor: "#fff" }}
+                      >
+                        <option value="">Seleccione...</option>
+                        <option value="Cédula">Cédula</option>
+                        <option value="Pasaporte">Pasaporte</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label
+                        style={{
+                          fontSize: "0.85em",
+                          color: "#555",
+                          fontWeight: "bold",
+                        }}
+                      >
+                        Identificación:
+                      </label>
+                      <input
+                        {...register(`practicas.${index}.identificacion`)}
+                        type="text"
+                        style={inputStyle}
+                      />
+                    </div>
+
+                    <div>
+                      <label
+                        style={{
+                          fontSize: "0.85em",
+                          color: "#555",
+                          fontWeight: "bold",
+                        }}
+                      >
+                        Empresa:
+                      </label>
+                      <input
+                        {...register(`practicas.${index}.empresa`)}
+                        type="text"
+                        style={inputStyle}
+                        placeholder="Nombre de la empresa"
+                      />
+                    </div>
+
+                    <div>
+                      <label
+                        style={{
+                          fontSize: "0.85em",
+                          color: "#555",
+                          fontWeight: "bold",
+                        }}
+                      >
+                        Tipo Empresa:
+                      </label>
+                      <select
+                        {...register(`practicas.${index}.tipo_empresa`)}
+                        style={{ ...inputStyle, backgroundColor: "#fff" }}
+                      >
+                        <option value="">Seleccione...</option>
+                        <option value="Pública">Pública</option>
+                        <option value="Privada">Privada</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label
+                        style={{
+                          fontSize: "0.85em",
+                          color: "#555",
+                          fontWeight: "bold",
+                        }}
+                      >
+                        Fecha Designación:
+                      </label>
+                      <input
+                        {...register(`practicas.${index}.fecha_designacion`)}
+                        type="date"
+                        style={inputStyle}
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+
+              {camposPracticas.length === 0 && (
+                <p
                   style={{
-                    fontSize: "0.85em",
                     color: "#555",
-                    fontWeight: "bold",
+                    fontStyle: "italic",
+                    padding: "10px 0",
                   }}
                 >
-                  Tipo Institución:
-                </label>
-                <input
-                  {...register("prac_tipo_institucion")}
-                  type="text"
-                  style={inputStyle}
-                />
-              </div>
+                  No hay estudiantes de prácticas agregados.
+                </p>
+              )}
             </div>
-
-            <div>
-              <label
-                style={{
-                  fontSize: "0.85em",
-                  color: "#555",
-                  fontWeight: "bold",
-                }}
-              >
-                Fecha Inicio:
-              </label>
-              <input
-                {...register("prac_fecha_inicio")}
-                type="date"
-                style={inputStyle}
-              />
-            </div>
-            <div>
-              <label
-                style={{
-                  fontSize: "0.85em",
-                  color: "#555",
-                  fontWeight: "bold",
-                }}
-              >
-                Fecha Fin:
-              </label>
-              <input
-                {...register("prac_fecha_fin")}
-                type="date"
-                style={inputStyle}
-              />
-            </div>
-            <div>
-              <label
-                style={{
-                  fontSize: "0.85em",
-                  color: "#555",
-                  fontWeight: "bold",
-                }}
-              >
-                Número de Horas:
-              </label>
-              <input
-                {...register("prac_numero_horas")}
-                type="number"
-                style={inputStyle}
-              />
-            </div>
-
-            <div>
-              <label
-                style={{
-                  fontSize: "0.85em",
-                  color: "#555",
-                  fontWeight: "bold",
-                }}
-              >
-                Código IES:
-              </label>
-              <input
-                {...register("prac_codigo_ies")}
-                type="text"
-                style={inputStyle}
-              />
-            </div>
-            <div>
-              <label
-                style={{
-                  fontSize: "0.85em",
-                  color: "#555",
-                  fontWeight: "bold",
-                }}
-              >
-                Código Carrera:
-              </label>
-              <input
-                {...register("prac_codigo_carrera")}
-                type="text"
-                style={inputStyle}
-              />
-            </div>
-            <div>
-              <label
-                style={{
-                  fontSize: "0.85em",
-                  color: "#555",
-                  fontWeight: "bold",
-                }}
-              >
-                Ciudad Carrera:
-              </label>
-              <input
-                {...register("prac_ciudad_carrera")}
-                type="text"
-                style={inputStyle}
-              />
-            </div>
-            <div>
-              <label
-                style={{
-                  fontSize: "0.85em",
-                  color: "#555",
-                  fontWeight: "bold",
-                }}
-              >
-                Campo Específico:
-              </label>
-              <input
-                {...register("prac_campo_especifico")}
-                type="text"
-                style={inputStyle}
-              />
-            </div>
-            <div>
-              <label
-                style={{
-                  fontSize: "0.85em",
-                  color: "#555",
-                  fontWeight: "bold",
-                }}
-              >
-                Identificación Docente Tutor:
-              </label>
-              <input
-                {...register("prac_id_docente")}
-                type="text"
-                style={inputStyle}
-              />
-            </div>
-          </div>
+          )}
         </fieldset>
 
         {/* ================= SECCIÓN 5 ================= */}
@@ -1401,536 +1821,501 @@ export default function NuevoInformePage() {
           disabled={esSoloLectura}
           style={{ ...fieldsetStyle, borderColor: "#e67e22" }}
         >
-          <legend style={{ ...legendStyle, color: "#e67e22" }}>
+          <legend
+            onClick={() => toggleAcordeon("sec5")}
+            style={{
+              ...legendStyle,
+              color: "#e67e22",
+              cursor: "pointer",
+              userSelect: "none",
+            }}
+          >
             5. VINCULACIÓN CON LA SOCIEDAD
+            <span
+              style={{
+                marginLeft: "15px",
+                fontSize: "0.8em",
+                backgroundColor: "#fbdcbf",
+                padding: "4px 10px",
+                borderRadius: "12px",
+                color: "#d35400",
+              }}
+            >
+              {acordeon.sec5 ? "Ocultar ▲" : "Mostrar ▼"}
+            </span>
           </legend>
-          <div style={subTitleStyle}>Datos Oficiales del Proyecto</div>
 
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-              gap: "10px",
-              marginBottom: "15px",
-            }}
-          >
-            <div style={{ gridColumn: "1 / -1" }}>
-              <label
+          {acordeon.sec5 && (
+            <div style={{ paddingTop: "10px" }}>
+              <div style={subTitleStyle}>Datos Oficiales del Proyecto</div>
+              <div
                 style={{
-                  fontSize: "0.85em",
-                  color: "#555",
-                  fontWeight: "bold",
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+                  gap: "10px",
+                  marginBottom: "15px",
                 }}
               >
-                Nombre del Proyecto:
-              </label>
-              <input
-                {...register("vinc_nombre")}
-                type="text"
-                style={inputStyle}
-              />
-            </div>
+                <div style={{ gridColumn: "1 / -1" }}>
+                  <label
+                    style={{
+                      fontSize: "0.85em",
+                      color: "#555",
+                      fontWeight: "bold",
+                    }}
+                  >
+                    Nombre del Proyecto:
+                  </label>
+                  <input
+                    {...register("vinc_nombre")}
+                    type="text"
+                    style={inputStyle}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: "0.8em", color: "#555" }}>
+                    Código Proyecto:
+                  </label>
+                  <input
+                    {...register("vinc_codigo_proyecto")}
+                    type="text"
+                    style={inputStyle}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: "0.8em", color: "#555" }}>
+                    Tipo Proyecto:
+                  </label>
+                  <input
+                    {...register("vinc_tipo_proyecto")}
+                    type="text"
+                    style={inputStyle}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: "0.8em", color: "#555" }}>
+                    Programa:
+                  </label>
+                  <input
+                    {...register("vinc_programa")}
+                    type="text"
+                    style={inputStyle}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: "0.8em", color: "#555" }}>
+                    Estado:
+                  </label>
+                  <input
+                    {...register("vinc_estado")}
+                    type="text"
+                    style={inputStyle}
+                  />
+                </div>
+                <div style={{ gridColumn: "1 / -1" }}>
+                  <label
+                    style={{
+                      fontSize: "0.85em",
+                      color: "#555",
+                      fontWeight: "bold",
+                    }}
+                  >
+                    Objetivo:
+                  </label>
+                  <textarea
+                    {...register("vinc_objetivo")}
+                    rows={2}
+                    style={inputStyle}
+                  ></textarea>
+                </div>
+                <div>
+                  <label style={{ fontSize: "0.8em", color: "#555" }}>
+                    Facultad / Entidad:
+                  </label>
+                  <input
+                    {...register("vinc_facultad")}
+                    type="text"
+                    style={inputStyle}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: "0.8em", color: "#555" }}>
+                    Fecha Inicio:
+                  </label>
+                  <input
+                    {...register("vinc_fecha_inicio")}
+                    type="date"
+                    style={inputStyle}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: "0.8em", color: "#555" }}>
+                    Fecha Fin Planeado:
+                  </label>
+                  <input
+                    {...register("vinc_fecha_fin_planeado")}
+                    type="date"
+                    style={inputStyle}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: "0.8em", color: "#555" }}>
+                    Fecha Fin Real:
+                  </label>
+                  <input
+                    {...register("vinc_fecha_fin_real")}
+                    type="date"
+                    style={inputStyle}
+                  />
+                </div>
+              </div>
 
-            <div>
-              <label style={{ fontSize: "0.8em", color: "#555" }}>
-                Código Proyecto:
-              </label>
-              <input
-                {...register("vinc_codigo_proyecto")}
-                type="text"
-                style={inputStyle}
-              />
-            </div>
-            <div>
-              <label style={{ fontSize: "0.8em", color: "#555" }}>
-                Tipo Proyecto:
-              </label>
-              <input
-                {...register("vinc_tipo_proyecto")}
-                type="text"
-                style={inputStyle}
-              />
-            </div>
-            <div>
-              <label style={{ fontSize: "0.8em", color: "#555" }}>
-                Programa:
-              </label>
-              <input
-                {...register("vinc_programa")}
-                type="text"
-                style={inputStyle}
-              />
-            </div>
-            <div>
-              <label style={{ fontSize: "0.8em", color: "#555" }}>Estado:</label>
-              <input
-                {...register("vinc_estado")}
-                type="text"
-                style={inputStyle}
-              />
-            </div>
-
-            <div style={{ gridColumn: "1 / -1" }}>
-              <label
+              <div style={subTitleStyle}>Dirección e Impacto</div>
+              <div
                 style={{
-                  fontSize: "0.85em",
-                  color: "#555",
-                  fontWeight: "bold",
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+                  gap: "10px",
+                  marginBottom: "15px",
                 }}
               >
-                Objetivo:
-              </label>
-              <textarea
-                {...register("vinc_objetivo")}
-                rows={2}
-                style={inputStyle}
-              ></textarea>
-            </div>
+                <div>
+                  <label style={{ fontSize: "0.8em", color: "#555" }}>
+                    Coordinador/Director:
+                  </label>
+                  <input
+                    {...register("vinc_coordinador")}
+                    type="text"
+                    style={inputStyle}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: "0.8em", color: "#555" }}>
+                    Correo Coordinador:
+                  </label>
+                  <input
+                    {...register("vinc_correo_coordinador")}
+                    type="text"
+                    style={inputStyle}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: "0.8em", color: "#555" }}>
+                    Teléfono:
+                  </label>
+                  <input
+                    {...register("vinc_telefono_coordinador")}
+                    type="text"
+                    style={inputStyle}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: "0.8em", color: "#555" }}>
+                    Línea Investigación:
+                  </label>
+                  <input
+                    {...register("vinc_linea_investigacion")}
+                    type="text"
+                    style={inputStyle}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: "0.8em", color: "#555" }}>
+                    Alcance Territorial:
+                  </label>
+                  <input
+                    {...register("vinc_alcance")}
+                    type="text"
+                    style={inputStyle}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: "0.8em", color: "#555" }}>
+                    Impacto Social:
+                  </label>
+                  <input
+                    {...register("vinc_impacto_social")}
+                    type="text"
+                    style={inputStyle}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: "0.8em", color: "#555" }}>
+                    Impacto Científico:
+                  </label>
+                  <input
+                    {...register("vinc_impacto_cientifico")}
+                    type="text"
+                    style={inputStyle}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: "0.8em", color: "#555" }}>
+                    Impacto Económico:
+                  </label>
+                  <input
+                    {...register("vinc_impacto_economico")}
+                    type="text"
+                    style={inputStyle}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: "0.8em", color: "#555" }}>
+                    Impacto Político:
+                  </label>
+                  <input
+                    {...register("vinc_impacto_politico")}
+                    type="text"
+                    style={inputStyle}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: "0.8em", color: "#555" }}>
+                    Otro Impacto:
+                  </label>
+                  <input
+                    {...register("vinc_otro_impacto")}
+                    type="text"
+                    style={inputStyle}
+                  />
+                </div>
+              </div>
 
-            <div>
-              <label style={{ fontSize: "0.8em", color: "#555" }}>
-                Facultad / Entidad:
-              </label>
-              <input
-                {...register("vinc_facultad")}
-                type="text"
-                style={inputStyle}
-              />
+              <div style={subTitleStyle}>
+                Gestión Administrativa y Financiera
+              </div>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+                  gap: "10px",
+                }}
+              >
+                <div>
+                  <label style={{ fontSize: "0.8em", color: "#555" }}>
+                    Fuente Financiamiento:
+                  </label>
+                  <input
+                    {...register("vinc_financiamiento")}
+                    type="text"
+                    style={inputStyle}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: "0.8em", color: "#555" }}>
+                    Presupuesto Planificado:
+                  </label>
+                  <input
+                    {...register("vinc_presupuesto_plan")}
+                    type="text"
+                    style={inputStyle}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: "0.8em", color: "#555" }}>
+                    Presupuesto Ejecutado:
+                  </label>
+                  <input
+                    {...register("vinc_presupuesto_ejec")}
+                    type="text"
+                    style={inputStyle}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: "0.8em", color: "#555" }}>
+                    Horas de Dedicación:
+                  </label>
+                  <input
+                    {...register("vinc_horas")}
+                    type="text"
+                    style={inputStyle}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: "0.8em", color: "#555" }}>
+                    Tipo Participante:
+                  </label>
+                  <input
+                    {...register("vinc_tipo_participante")}
+                    type="text"
+                    style={inputStyle}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: "0.8em", color: "#555" }}>
+                    Grupo Investigación:
+                  </label>
+                  <input
+                    {...register("vinc_grupo_inv")}
+                    type="text"
+                    style={inputStyle}
+                  />
+                </div>
+              </div>
             </div>
-            <div>
-              <label style={{ fontSize: "0.8em", color: "#555" }}>
-                Fecha Inicio:
-              </label>
-              <input
-                {...register("vinc_fecha_inicio")}
-                type="date"
-                style={inputStyle}
-              />
-            </div>
-            <div>
-              <label style={{ fontSize: "0.8em", color: "#555" }}>
-                Fecha Fin Planeado:
-              </label>
-              <input
-                {...register("vinc_fecha_fin_planeado")}
-                type="date"
-                style={inputStyle}
-              />
-            </div>
-            <div>
-              <label style={{ fontSize: "0.8em", color: "#555" }}>
-                Fecha Fin Real:
-              </label>
-              <input
-                {...register("vinc_fecha_fin_real")}
-                type="date"
-                style={inputStyle}
-              />
-            </div>
-          </div>
-
-          <div style={subTitleStyle}>Dirección e Impacto</div>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-              gap: "10px",
-              marginBottom: "15px",
-            }}
-          >
-            <div>
-              <label style={{ fontSize: "0.8em", color: "#555" }}>
-                Coordinador/Director:
-              </label>
-              <input
-                {...register("vinc_coordinador")}
-                type="text"
-                style={inputStyle}
-              />
-            </div>
-            <div>
-              <label style={{ fontSize: "0.8em", color: "#555" }}>
-                Correo Coordinador:
-              </label>
-              <input
-                {...register("vinc_correo_coordinador")}
-                type="text"
-                style={inputStyle}
-              />
-            </div>
-            <div>
-              <label style={{ fontSize: "0.8em", color: "#555" }}>
-                Teléfono:
-              </label>
-              <input
-                {...register("vinc_telefono_coordinador")}
-                type="text"
-                style={inputStyle}
-              />
-            </div>
-            <div>
-              <label style={{ fontSize: "0.8em", color: "#555" }}>
-                Línea Investigación:
-              </label>
-              <input
-                {...register("vinc_linea_investigacion")}
-                type="text"
-                style={inputStyle}
-              />
-            </div>
-
-            <div>
-              <label style={{ fontSize: "0.8em", color: "#555" }}>
-                Alcance Territorial:
-              </label>
-              <input
-                {...register("vinc_alcance")}
-                type="text"
-                style={inputStyle}
-              />
-            </div>
-            <div>
-              <label style={{ fontSize: "0.8em", color: "#555" }}>
-                Impacto Social:
-              </label>
-              <input
-                {...register("vinc_impacto_social")}
-                type="text"
-                style={inputStyle}
-              />
-            </div>
-            <div>
-              <label style={{ fontSize: "0.8em", color: "#555" }}>
-                Impacto Científico:
-              </label>
-              <input
-                {...register("vinc_impacto_cientifico")}
-                type="text"
-                style={inputStyle}
-              />
-            </div>
-            <div>
-              <label style={{ fontSize: "0.8em", color: "#555" }}>
-                Impacto Económico:
-              </label>
-              <input
-                {...register("vinc_impacto_economico")}
-                type="text"
-                style={inputStyle}
-              />
-            </div>
-            <div>
-              <label style={{ fontSize: "0.8em", color: "#555" }}>
-                Impacto Político:
-              </label>
-              <input
-                {...register("vinc_impacto_politico")}
-                type="text"
-                style={inputStyle}
-              />
-            </div>
-            <div>
-              <label style={{ fontSize: "0.8em", color: "#555" }}>
-                Otro Impacto:
-              </label>
-              <input
-                {...register("vinc_otro_impacto")}
-                type="text"
-                style={inputStyle}
-              />
-            </div>
-          </div>
-
-          <div style={subTitleStyle}>Gestión Administrativa y Financiera</div>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-              gap: "10px",
-            }}
-          >
-            <div>
-              <label style={{ fontSize: "0.8em", color: "#555" }}>
-                Fuente Financiamiento:
-              </label>
-              <input
-                {...register("vinc_financiamiento")}
-                type="text"
-                style={inputStyle}
-              />
-            </div>
-            <div>
-              <label style={{ fontSize: "0.8em", color: "#555" }}>
-                Presupuesto Planificado:
-              </label>
-              <input
-                {...register("vinc_presupuesto_plan")}
-                type="text"
-                style={inputStyle}
-              />
-            </div>
-            <div>
-              <label style={{ fontSize: "0.8em", color: "#555" }}>
-                Presupuesto Ejecutado:
-              </label>
-              <input
-                {...register("vinc_presupuesto_ejec")}
-                type="text"
-                style={inputStyle}
-              />
-            </div>
-            <div>
-              <label style={{ fontSize: "0.8em", color: "#555" }}>
-                Horas de Dedicación:
-              </label>
-              <input
-                {...register("vinc_horas")}
-                type="text"
-                style={inputStyle}
-              />
-            </div>
-            <div>
-              <label style={{ fontSize: "0.8em", color: "#555" }}>
-                Tipo Participante:
-              </label>
-              <input
-                {...register("vinc_tipo_participante")}
-                type="text"
-                style={inputStyle}
-              />
-            </div>
-            <div>
-              <label style={{ fontSize: "0.8em", color: "#555" }}>
-                Grupo Investigación:
-              </label>
-              <input
-                {...register("vinc_grupo_inv")}
-                type="text"
-                style={inputStyle}
-              />
-            </div>
-          </div>
+          )}
         </fieldset>
 
-        {/* ================= SECCIÓN 6 ================= */}
-        <fieldset
-          disabled={esSoloLectura}
-          style={{ ...fieldsetStyle, borderColor: "#e67e22" }}
-        >
-          <legend style={{ ...legendStyle, color: "#e67e22" }}>
-            6. INVESTIGACIÓN Y PUBLICACIONES
-          </legend>
-          <div style={subTitleStyle}>Publicaciones y Ponencias Acreditadas</div>
-
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-              gap: "10px",
-            }}
+       {/* ================= SECCIÓN 6 ================= */}
+        <fieldset disabled={esSoloLectura} style={{ ...fieldsetStyle, borderColor: "#e67e22" }}>
+          <legend 
+            onClick={() => toggleAcordeon("sec6")}
+            style={{ ...legendStyle, color: "#e67e22", cursor: "pointer", userSelect: "none" }}
           >
-            <div style={{ gridColumn: "1 / -1" }}>
-              <label
-                style={{
-                  fontSize: "0.85em",
-                  color: "#555",
-                  fontWeight: "bold",
-                }}
+            6. INVESTIGACIÓN Y PUBLICACIONES
+            <span style={{ marginLeft: "15px", fontSize: "0.8em", backgroundColor: "#fbdcbf", padding: "4px 10px", borderRadius: "12px", color: "#d35400" }}>
+              {acordeon.sec6 ? "Ocultar ▲" : "Mostrar ▼"}
+            </span>
+          </legend>
+
+          {acordeon.sec6 && (
+            <div style={{ paddingTop: "10px" }}>
+              
+              {/* ------------ SUBCATEGORÍA: PUBLICACIONES ------------ */}
+              <div style={subTitleStyle}>Publicaciones y Ponencias Acreditadas</div>
+              
+              <button
+                type="button"
+                onClick={() => appendPublicacion({ titulo: "", nombres: "", codigo_ies: "", tipo_pub: "", tipo_articulo: "", codigo_pub: "", base_indexada: "", issn: "", revista: "", fecha_pub: "", cargo: "", facultad: "", intercultural: "", link_pub: "", link_revista: "" })}
+                style={{ marginBottom: "15px", padding: "8px 15px", backgroundColor: "#e67e22", color: "white", border: "none", borderRadius: "4px", cursor: "pointer" }}
               >
-                Título de Publicación:
-              </label>
-              <input
-                {...register("inv_titulo")}
-                type="text"
-                style={inputStyle}
-              />
-            </div>
-            <div style={{ gridColumn: "1 / -1" }}>
-              <label
-                style={{
-                  fontSize: "0.85em",
-                  color: "#555",
-                  fontWeight: "bold",
-                }}
+                + Añadir Publicación / Ponencia
+              </button>
+
+              {camposPublicaciones.map((campo, index) => (
+                <div key={campo.id} style={{ marginBottom: "20px", padding: "15px", backgroundColor: "#fff", border: "1px dashed #e67e22", borderRadius: "6px", position: "relative" }}>
+                  <button type="button" onClick={() => removePublicacion(index)} style={{ position: "absolute", top: "10px", right: "10px", background: "#c0392b", color: "#fff", border: "none", borderRadius: "3px", cursor: "pointer", padding: "4px 8px" }}>X Eliminar</button>
+                  
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "10px", marginTop: "15px" }}>
+                    <div style={{ gridColumn: "1 / -1" }}><label style={{ fontSize: "0.85em", color: "#555", fontWeight: "bold" }}>Título de Publicación:</label><input {...register(`publicaciones.${index}.titulo`)} type="text" style={inputStyle} /></div>
+                    <div style={{ gridColumn: "1 / -1" }}><label style={{ fontSize: "0.85em", color: "#555", fontWeight: "bold" }}>Nombres y Apellidos (Autores):</label><input {...register(`publicaciones.${index}.nombres`)} type="text" style={inputStyle} /></div>
+                    <div><label style={{ fontSize: "0.8em", color: "#555" }}>Código IES:</label><input {...register(`publicaciones.${index}.codigo_ies`)} type="text" style={inputStyle} /></div>
+                    <div><label style={{ fontSize: "0.8em", color: "#555" }}>Tipo Publicación:</label><input {...register(`publicaciones.${index}.tipo_pub`)} type="text" style={inputStyle} /></div>
+                    <div><label style={{ fontSize: "0.8em", color: "#555" }}>Tipo Artículo:</label><input {...register(`publicaciones.${index}.tipo_articulo`)} type="text" style={inputStyle} /></div>
+                    <div><label style={{ fontSize: "0.8em", color: "#555" }}>Código Publicación:</label><input {...register(`publicaciones.${index}.codigo_pub`)} type="text" style={inputStyle} /></div>
+                    <div><label style={{ fontSize: "0.8em", color: "#555" }}>Base Datos Indexada:</label><input {...register(`publicaciones.${index}.base_indexada`)} type="text" style={inputStyle} /></div>
+                    <div><label style={{ fontSize: "0.8em", color: "#555" }}>Código ISSN:</label><input {...register(`publicaciones.${index}.issn`)} type="text" style={inputStyle} /></div>
+                    <div style={{ gridColumn: "span 2" }}><label style={{ fontSize: "0.8em", color: "#555" }}>Nombre Revista:</label><input {...register(`publicaciones.${index}.revista`)} type="text" style={inputStyle} /></div>
+                    <div><label style={{ fontSize: "0.8em", color: "#555" }}>Fecha Publicación:</label><input {...register(`publicaciones.${index}.fecha_pub`)} type="date" style={inputStyle} /></div>
+                    <div><label style={{ fontSize: "0.8em", color: "#555" }}>Cargo Institucional:</label><input {...register(`publicaciones.${index}.cargo`)} type="text" style={inputStyle} /></div>
+                    <div><label style={{ fontSize: "0.8em", color: "#555" }}>Facultad:</label><input {...register(`publicaciones.${index}.facultad`)} type="text" style={inputStyle} /></div>
+                    <div><label style={{ fontSize: "0.8em", color: "#555" }}>Enfoque Intercultural:</label><input {...register(`publicaciones.${index}.intercultural`)} type="text" style={inputStyle} /></div>
+                    <div style={{ gridColumn: "1 / -1" }}><label style={{ fontSize: "0.8em", color: "#555" }}>Link Publicación:</label><input {...register(`publicaciones.${index}.link_pub`)} type="text" style={inputStyle} /></div>
+                    <div style={{ gridColumn: "1 / -1" }}><label style={{ fontSize: "0.8em", color: "#555" }}>Link Revista:</label><input {...register(`publicaciones.${index}.link_revista`)} type="text" style={inputStyle} /></div>
+                  </div>
+                </div>
+              ))}
+
+              {camposPublicaciones.length === 0 && (
+                <p style={{ color: "#555", fontStyle: "italic", padding: "0 0 15px 0" }}>No hay publicaciones agregadas.</p>
+              )}
+
+
+              {/* ------------ SUBCATEGORÍA: PROYECTOS DE INVESTIGACIÓN ------------ */}
+              <div style={{ ...subTitleStyle, marginTop: "20px" }}>Proyectos de Investigación</div>
+              
+              <button
+                type="button"
+                onClick={() => appendProyectoInv({ proyecto: "", institucion: "", cargo: "", fecha_designacion: "" })}
+                style={{ marginBottom: "15px", padding: "8px 15px", backgroundColor: "#e67e22", color: "white", border: "none", borderRadius: "4px", cursor: "pointer" }}
               >
-                Nombres y Apellidos (Autores):
-              </label>
-              <input
-                {...register("inv_nombres")}
-                type="text"
-                style={inputStyle}
-              />
-            </div>
+                + Añadir Proyecto de Investigación
+              </button>
 
-            <div>
-              <label style={{ fontSize: "0.8em", color: "#555" }}>
-                Código IES:
-              </label>
-              <input
-                {...register("inv_codigo_ies")}
-                type="text"
-                style={inputStyle}
-              />
-            </div>
-            <div>
-              <label style={{ fontSize: "0.8em", color: "#555" }}>
-                Tipo Publicación:
-              </label>
-              <input
-                {...register("inv_tipo_publicacion")}
-                type="text"
-                style={inputStyle}
-              />
-            </div>
-            <div>
-              <label style={{ fontSize: "0.8em", color: "#555" }}>
-                Tipo Artículo:
-              </label>
-              <input
-                {...register("inv_tipo_articulo")}
-                type="text"
-                style={inputStyle}
-              />
-            </div>
-            <div>
-              <label style={{ fontSize: "0.8em", color: "#555" }}>
-                Código Publicación:
-              </label>
-              <input
-                {...register("inv_codigo_publicacion")}
-                type="text"
-                style={inputStyle}
-              />
-            </div>
+              {camposProyectosInv.map((campo, index) => (
+                <div key={campo.id} style={{ marginBottom: "15px", padding: "15px", backgroundColor: "#fff", border: "1px dashed #e67e22", borderRadius: "6px", position: "relative" }}>
+                  <button type="button" onClick={() => removeProyectoInv(index)} style={{ position: "absolute", top: "10px", right: "10px", background: "#c0392b", color: "#fff", border: "none", borderRadius: "3px", cursor: "pointer", padding: "4px 8px" }}>X Eliminar</button>
+                  
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "10px", marginTop: "15px" }}>
+                    <div style={{ gridColumn: "1 / -1" }}>
+                      <label style={{ fontSize: "0.85em", color: "#555", fontWeight: "bold" }}>Proyecto:</label>
+                      <input {...register(`proyectos_investigacion.${index}.proyecto`)} type="text" style={inputStyle} placeholder="Nombre del proyecto" />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: "0.85em", color: "#555", fontWeight: "bold" }}>Institución:</label>
+                      <input {...register(`proyectos_investigacion.${index}.institucion`)} type="text" style={inputStyle} />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: "0.85em", color: "#555", fontWeight: "bold" }}>Cargo:</label>
+                      <input {...register(`proyectos_investigacion.${index}.cargo`)} type="text" style={inputStyle} />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: "0.85em", color: "#555", fontWeight: "bold" }}>Fecha de designación:</label>
+                      <input {...register(`proyectos_investigacion.${index}.fecha_designacion`)} type="date" style={inputStyle} />
+                    </div>
+                  </div>
+                </div>
+              ))}
 
-            <div>
-              <label style={{ fontSize: "0.8em", color: "#555" }}>
-                Base Datos Indexada:
-              </label>
-              <input
-                {...register("inv_base_indexada")}
-                type="text"
-                style={inputStyle}
-              />
+              {camposProyectosInv.length === 0 && (
+                <p style={{ color: "#555", fontStyle: "italic", padding: "0 0 10px 0" }}>No hay proyectos de investigación agregados.</p>
+              )}
             </div>
-            <div>
-              <label style={{ fontSize: "0.8em", color: "#555" }}>
-                Código ISSN:
-              </label>
-              <input {...register("inv_issn")} type="text" style={inputStyle} />
-            </div>
-            <div style={{ gridColumn: "span 2" }}>
-              <label style={{ fontSize: "0.8em", color: "#555" }}>
-                Nombre Revista:
-              </label>
-              <input
-                {...register("inv_revista")}
-                type="text"
-                style={inputStyle}
-              />
-            </div>
-
-            <div>
-              <label style={{ fontSize: "0.8em", color: "#555" }}>
-                Fecha Publicación:
-              </label>
-              <input
-                {...register("inv_fecha_pub")}
-                type="date"
-                style={inputStyle}
-              />
-            </div>
-            <div>
-              <label style={{ fontSize: "0.8em", color: "#555" }}>
-                Cargo Institucional:
-              </label>
-              <input
-                {...register("inv_cargo")}
-                type="text"
-                style={inputStyle}
-              />
-            </div>
-            <div>
-              <label style={{ fontSize: "0.8em", color: "#555" }}>
-                Facultad:
-              </label>
-              <input
-                {...register("inv_facultad")}
-                type="text"
-                style={inputStyle}
-              />
-            </div>
-            <div>
-              <label style={{ fontSize: "0.8em", color: "#555" }}>
-                Enfoque Intercultural:
-              </label>
-              <input
-                {...register("inv_intercultural")}
-                type="text"
-                style={inputStyle}
-              />
-            </div>
-
-            <div style={{ gridColumn: "1 / -1" }}>
-              <label style={{ fontSize: "0.8em", color: "#555" }}>
-                Link Publicación:
-              </label>
-              <input
-                {...register("inv_link_pub")}
-                type="text"
-                style={inputStyle}
-              />
-            </div>
-            <div style={{ gridColumn: "1 / -1" }}>
-              <label style={{ fontSize: "0.8em", color: "#555" }}>
-                Link Revista:
-              </label>
-              <input
-                {...register("inv_link_revista")}
-                type="text"
-                style={inputStyle}
-              />
-            </div>
-          </div>
+          )}
         </fieldset>
 
         {/* ================= SECCIÓN 7 ================= */}
         <fieldset disabled={esSoloLectura} style={fieldsetStyle}>
-          <legend style={legendStyle}>7. EVIDENCIAS GENERALES Y CIERRE</legend>
-          <label>Evidencias generales:</label>
-          <textarea
-            {...register("evidencias")}
-            rows={3}
-            style={{ ...inputStyle, marginBottom: "10px" }}
-          ></textarea>
-
-          <div
-            style={{
-              display: "flex",
-              gap: "15px",
-              marginTop: "15px",
-              minWidth: 0,
-              flexWrap: "wrap",
-            }}
+          <legend
+            onClick={() => toggleAcordeon("sec7")}
+            style={{ ...legendStyle, cursor: "pointer", userSelect: "none" }}
           >
-            <div style={{ flex: 1, minWidth: "150px" }}>
-              <label>Fecha de elaboración:</label>
-              <input
-                {...register("fecha_elaboracion")}
-                type="date"
-                style={inputStyle}
-              />
+            7. DESIGNACIONES Y CIERRE
+            <span
+              style={{
+                marginLeft: "15px",
+                fontSize: "0.8em",
+                backgroundColor: "#d4e6f1",
+                padding: "4px 10px",
+                borderRadius: "12px",
+                color: "#1a3b5c",
+              }}
+            >
+              {acordeon.sec7 ? "Ocultar ▲" : "Mostrar ▼"}
+            </span>
+          </legend>
+
+          {acordeon.sec7 && (
+            <div style={{ paddingTop: "10px" }}>
+              <label style={{ fontWeight: "bold", color: "#555" }}>
+                Otras Designaciones / Comisiones (Ingreso manual):
+              </label>
+              <textarea
+                {...register("designaciones")}
+                rows={3}
+                placeholder="Ej. Miembro de Comisión de Prácticas, Coordinador de Área, etc. Detalle sus designaciones aquí..."
+                style={{ ...inputStyle, marginBottom: "10px" }}
+              ></textarea>
+
+              <div
+                style={{
+                  display: "flex",
+                  gap: "15px",
+                  marginTop: "15px",
+                  minWidth: 0,
+                  flexWrap: "wrap",
+                }}
+              >
+                <div style={{ flex: 1, minWidth: "150px" }}>
+                  <label>Fecha de elaboración:</label>
+                  <input
+                    {...register("fecha_elaboracion")}
+                    type="date"
+                    style={inputStyle}
+                  />
+                </div>
+                <div style={{ flex: 2, minWidth: "200px" }}>
+                  <label>Firma y Nombre del Docente:</label>
+                  <input
+                    {...register("firma_docente")}
+                    type="text"
+                    style={inputStyle}
+                    placeholder="Nombre completo para firma digital"
+                  />
+                </div>
+              </div>
             </div>
-            <div style={{ flex: 2, minWidth: "200px" }}>
-              <label>Firma y Nombre del Docente:</label>
-              <input
-                {...register("firma_docente")}
-                type="text"
-                style={inputStyle}
-                placeholder="Nombre completo para firma digital"
-              />
-            </div>
-          </div>
+          )}
         </fieldset>
 
         {/* ================= BOTONES FINALES ================= */}

@@ -89,7 +89,7 @@ export default function LoginPage() {
               onChange={(e) => setPassword(e.target.value)}
               required
               style={{ width: '100%', padding: '0.75rem', border: '1px solid #d1d5db', borderRadius: '4px', boxSizing: 'border-box' }}
-              placeholder="Tu número de cédula"
+              placeholder="********"
             />
           </div>
 
