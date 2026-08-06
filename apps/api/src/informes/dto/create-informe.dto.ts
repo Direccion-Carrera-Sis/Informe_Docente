@@ -4,4 +4,5 @@ export class CreateInformeDto {
   estado?: string;
   datosEstructurales?: Record<string, any>;
   actividades?: Record<string, any>;
+  progreso?: number;
 }

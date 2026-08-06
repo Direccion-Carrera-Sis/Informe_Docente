@@ -1,6 +1,14 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 
-import { Controller, Get, Post, Body, Param } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Put,
+  Delete,
+} from '@nestjs/common';
 import { InformesService } from './informes.service';
 
 @Controller('informes')
@@ -25,5 +33,20 @@ export class InformesController {
   @Get('docente/:id')
   async obtenerInformesDelDocente(@Param('id') docenteId: string) {
     return this.informesService.obtenerPorDocente(docenteId);
+  }
+
+  @Get(':id')
+  findOne(@Param('id') id: string) {
+    return this.informesService.findOne(id);
+  }
+
+  @Put(':id')
+  update(@Param('id') id: string, @Body() updateData: any) {
+    return this.informesService.update(id, updateData);
+  }
+
+  @Delete(':id')
+  remove(@Param('id') id: string) {
+    return this.informesService.remove(id);
   }
 }

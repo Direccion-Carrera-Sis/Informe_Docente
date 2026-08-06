@@ -5,7 +5,12 @@
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import {
+  HttpException,
+  HttpStatus,
+  Injectable,
+  OnModuleInit,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Readable } from 'stream';
@@ -114,5 +119,40 @@ export class UsuariosService implements OnModuleInit {
 
   async buscarPorCorreo(correo: string) {
     return this.usuarioModel.findOne({ correo });
+  }
+
+  async cambiarClave(
+    cedula: string,
+    datosClave: { claveActual: string; nuevaClave: string },
+  ) {
+    // 1. Buscar al usuario en MongoDB por su cédula
+    const usuario = await this.usuarioModel.findOne({ cedula }).exec();
+    if (!usuario) {
+      throw new HttpException('Usuario no encontrado', HttpStatus.NOT_FOUND);
+    }
+
+    // 2. Comparar la clave actual ingresada con la encriptada en la BD
+    // OJO: Cambia "usuario.clave" por el nombre exacto de tu campo en BD (ej. usuario.password)
+    const claveValida = await bcrypt.compare(
+      datosClave.claveActual,
+      usuario.password,
+    );
+
+    if (!claveValida) {
+      throw new HttpException(
+        'La contraseña actual es incorrecta',
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
+
+    // 3. Encriptar la nueva contraseña
+    const salt = await bcrypt.genSalt(10);
+    const claveEncriptada = await bcrypt.hash(datosClave.nuevaClave, salt);
+
+    // 4. Guardar los cambios
+    usuario.password = claveEncriptada; // OJO: Igual aquí, usa tu nombre de campo exacto
+    await usuario.save();
+
+    return { mensaje: 'Contraseña actualizada con éxito' };
   }
 }
