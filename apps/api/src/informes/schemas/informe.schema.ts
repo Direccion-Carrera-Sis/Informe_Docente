@@ -17,6 +17,9 @@ export class Informe extends Document {
 
   @Prop({ type: MongooseSchema.Types.Mixed, default: {} })
   actividades!: Record<string, any>;
+
+  @Prop({ default: 0 })
+  progreso!: number;
 }
 
 export const InformeSchema = SchemaFactory.createForClass(Informe);

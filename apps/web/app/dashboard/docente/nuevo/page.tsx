@@ -88,24 +88,22 @@ export default function NuevoInformePage() {
   const [esSoloLectura, setEsSoloLectura] = useState(false);
 
   const [materiaActiva, setMateriaActiva] = useState(0);
-
   const [informeId, setInformeId] = useState<string | null>(null);
 
-  // Estado para controlar qué acordeones están abiertos (true) o cerrados (false)
   const [acordeon, setAcordeon] = useState({
-    sec3: false, // Titulación (cerrado por defecto)
-    sec4: false, // Prácticas (cerrado por defecto)
-    sec5: false, // Vinculación (cerrado por defecto)
-    sec6: false, // Investigación (cerrado por defecto)
-    sec7: false, // Cierre y Evidencias (ABIERTO por defecto para ver el botón de Guardar fácilmente)
+    sec3: false,
+    sec4: false,
+    sec5: false,
+    sec6: false,
+    sec7: false,
   });
 
-  // Función que abre/cierra una sección específica
   const toggleAcordeon = (seccion: keyof typeof acordeon) => {
     setAcordeon((prev) => ({ ...prev, [seccion]: !prev[seccion] }));
   };
 
-  const { register, handleSubmit, control, reset, watch } =
+  // 👇 Aquí está la clave: hemos importado 'getValues'
+  const { register, handleSubmit, control, reset, watch, getValues } =
     useForm<FieldValues>({
       defaultValues: { asignaturas: [], titulaciones_asignadas: [] },
     });
@@ -159,7 +157,6 @@ export default function NuevoInformePage() {
     name: "proyectos_investigacion",
   });
 
-  // 1. Modificamos el useEffect para capturar el ID de forma nativa
   useEffect(() => {
     const usuarioGuardado = localStorage.getItem("usuario");
 
@@ -168,7 +165,6 @@ export default function NuevoInformePage() {
       setUserId(datosUsuario.cedula);
       setEsSoloLectura(datosUsuario.rol !== "docente");
 
-      // Captura infalible del ID desde la URL
       const urlParams = new URLSearchParams(window.location.search);
       const idDeLaUrl = urlParams.get("id");
 
@@ -183,9 +179,8 @@ export default function NuevoInformePage() {
     } else {
       router.push("/");
     }
-  }, []); // Quitamos idEdicion de los corchetes
+  }, []);
 
-  // 2. Mejoramos la función de carga para manejar errores y evitar vacíos
   const cargarInformeExistente = async (id: string) => {
     try {
       const res = await fetch(`http://localhost:4000/informes/${id}`);
@@ -194,33 +189,21 @@ export default function NuevoInformePage() {
         const bd = await res.json();
         console.log("Datos del borrador descargados:", bd);
 
-        reset({
+reset({
           docente_nombre: bd.datosEstructurales?.docente_nombre || "",
           periodo: bd.periodoAcademico || "2026-2026",
           firma_docente: bd.datosEstructurales?.firma_docente || "",
           fecha_elaboracion: bd.datosEstructurales?.fecha_elaboracion || "",
-          // Si por alguna razón el array viene vacío, evitamos que se rompan las pestañas
           asignaturas: bd.datosEstructurales?.asignaturas?.length
             ? bd.datosEstructurales.asignaturas
             : [],
           titulaciones_asignadas: bd.actividades?.titulacion || [],
           titulaciones_lector: bd.actividades?.lector || [],
 
-          practicas_estudiante: bd.actividades?.practicas?.estudiante || "",
-          prac_tipo_identificacion:
-            bd.actividades?.practicas?.tipo_identificacion || "",
-          prac_identificacion: bd.actividades?.practicas?.identificacion || "",
-          prac_nombre_institucion: bd.actividades?.practicas?.institucion || "",
-          prac_tipo_institucion:
-            bd.actividades?.practicas?.tipo_institucion || "",
-          prac_fecha_inicio: bd.actividades?.practicas?.fecha_inicio || "",
-          prac_fecha_fin: bd.actividades?.practicas?.fecha_fin || "",
-          prac_numero_horas: bd.actividades?.practicas?.horas || "",
-          prac_codigo_ies: bd.actividades?.practicas?.codigo_ies || "",
-          prac_codigo_carrera: bd.actividades?.practicas?.codigo_carrera || "",
-          prac_ciudad_carrera: bd.actividades?.practicas?.ciudad || "",
-          prac_campo_especifico: bd.actividades?.practicas?.campo || "",
-          prac_id_docente: bd.actividades?.practicas?.id_docente || "",
+          // 👇 Arreglo de prácticas (Elimina todas las variables viejas)
+          practicas: Array.isArray(bd.actividades?.practicas) 
+            ? bd.actividades.practicas 
+            : [],
 
           vinc_nombre: bd.actividades?.vinculacion?.nombre || "",
           vinc_codigo_proyecto: bd.actividades?.vinculacion?.codigo || "",
@@ -228,7 +211,9 @@ export default function NuevoInformePage() {
           vinc_programa: bd.actividades?.vinculacion?.programa || "",
           vinc_estado: bd.actividades?.vinculacion?.estado || "",
           vinc_objetivo: bd.actividades?.vinculacion?.objetivo || "",
-          vinc_facultad: bd.actividades?.vinculacion?.facultad || "",
+          vinc_facultad:
+            bd.actividades?.vinculacion?.facultad ||
+            "Facultad de Ingeniería y Ciencias Aplicadas",
           vinc_fecha_inicio: bd.actividades?.vinculacion?.fecha_inicio || "",
           vinc_fecha_fin_planeado:
             bd.actividades?.vinculacion?.fecha_fin_plan || "",
@@ -260,10 +245,21 @@ export default function NuevoInformePage() {
             bd.actividades?.vinculacion?.tipo_participante || "",
           vinc_grupo_inv: bd.actividades?.vinculacion?.grupo_inv || "",
 
-          publicaciones: Array.isArray(bd.actividades?.investigacion?.publicaciones) ? bd.actividades.investigacion.publicaciones : [],
-          proyectos_investigacion: Array.isArray(bd.actividades?.investigacion?.proyectos) ? bd.actividades.investigacion.proyectos : [],
+          publicaciones: Array.isArray(
+            bd.actividades?.investigacion?.publicaciones,
+          )
+            ? bd.actividades.investigacion.publicaciones
+            : [],
+          proyectos_investigacion: Array.isArray(
+            bd.actividades?.investigacion?.proyectos,
+          )
+            ? bd.actividades.investigacion.proyectos
+            : [],
 
-          designaciones: bd.designaciones || "",
+          // 👇 Designaciones leyendo de datosEstructurales
+          designaciones: bd.datosEstructurales?.designaciones || "",
+          designaciones_fecha_inicio: bd.datosEstructurales?.designaciones_fecha_inicio || "",
+          designaciones_fecha_fin: bd.datosEstructurales?.designaciones_fecha_fin || "",
         });
       } else {
         alert("El backend no pudo encontrar este informe para editarlo.");
@@ -336,6 +332,7 @@ export default function NuevoInformePage() {
                 },
               ],
         titulaciones_asignadas: titulacionesFormateadas,
+        vinc_facultad: "Facultad de Ingeniería y Ciencias Aplicadas",
       });
     } catch (err) {
       console.error("Error de red al comunicarse con el backend:", err);
@@ -349,16 +346,21 @@ export default function NuevoInformePage() {
         docenteId: userId,
         periodoAcademico: data.periodo || "2026-2026",
         estado: "Borrador",
+        progreso: calcularProgreso(),
         datosEstructurales: {
           docente_nombre: data.docente_nombre,
           fecha_elaboracion: data.fecha_elaboracion,
           firma_docente: data.firma_docente,
           asignaturas: data.asignaturas,
+          // 👇 Aquí van las designaciones
+          designaciones: data.designaciones,
+          designaciones_fecha_inicio: data.designaciones_fecha_inicio,
+          designaciones_fecha_fin: data.designaciones_fecha_fin,
         },
         actividades: {
           titulacion: data.titulaciones_asignadas,
           lector: data.titulaciones_lector,
-          practicas: data.practicas,
+          practicas: data.practicas, // 👈 Esto enviará el arreglo completo
           vinculacion: {
             nombre: data.vinc_nombre,
             codigo: data.vinc_codigo_proyecto,
@@ -392,7 +394,6 @@ export default function NuevoInformePage() {
             proyectos: data.proyectos_investigacion,
           },
         },
-        designaciones: data.designaciones,
       };
 
       const url = informeId
@@ -417,7 +418,7 @@ export default function NuevoInformePage() {
         alert(
           informeId
             ? "¡Informe actualizado correctamente!"
-            : "¡Informe guardado con éxito en MongoDB!",
+            : "¡Informe guardado!",
         );
       } else {
         alert("Hubo un error al guardar el informe.");
@@ -428,6 +429,170 @@ export default function NuevoInformePage() {
       setCargando(false);
     }
   };
+
+  // 👇 Lógica para PDF (Verifica Sección 1 y TODA la Sección 2)
+  const descargarPDF = async () => {
+    const valoresActuales = getValues();
+
+    // ================= VALIDACIÓN OBLIGATORIA (SECCIONES 1 y 2) =================
+    let formularioIncompleto = false;
+    let mensajeFalta = "";
+
+    // Lista de todos los cuadros de texto obligatorios de la Sección 2
+    const camposTextoSec2 = [
+      "resultados_tabla",
+      "res_criterios",
+      "res_instrumento",
+      "resultados_actividades",
+      "resultados_logro",
+      "res_acciones",
+      "res_propuestas",
+      "res_cumplimiento",
+      "hab_criterios",
+      "hab_instrumento",
+      "habilidades_actividades",
+      "habilidades_logro",
+      "hab_acciones",
+      "hab_propuestas",
+      "hab_cumplimiento",
+      "tac_herramienta",
+      "tac_actividades",
+      "tac_logro",
+      "tac_acciones",
+      "tac_propuestas",
+      "tac_cumplimiento",
+    ];
+
+    if (valoresActuales.asignaturas && valoresActuales.asignaturas.length > 0) {
+      formularioIncompleto = valoresActuales.asignaturas.some(
+        (asig: any, index: number) => {
+          // 1. Validamos Sección 1 (Campos numéricos)
+          const faltaEst =
+            asig.estudiantes === "" || asig.estudiantes === undefined;
+          const faltaAsist =
+            asig.asistencia === "" || asig.asistencia === undefined;
+          const faltaAprob =
+            asig.aprobados === "" || asig.aprobados === undefined;
+          const faltaReprob =
+            asig.reprobados === "" || asig.reprobados === undefined;
+
+          if (faltaEst || faltaAsist || faltaAprob || faltaReprob) {
+            mensajeFalta = `Faltan datos en la Sección 1.`;
+            return true;
+          }
+
+          // 2. Validamos Sección 2 (Campos de Texto)
+          const faltaTextos = camposTextoSec2.some(
+            (campo) => !asig[campo] || asig[campo].trim() === "",
+          );
+          if (faltaTextos) {
+            mensajeFalta = `Faltan datos en la Sección 2.1`;
+            return true;
+          }
+
+          // 3. Validamos Sección 2 (Checkboxes obligatorios)
+          if (!asig.habilidades_tabla || asig.habilidades_tabla.length === 0) {
+            mensajeFalta = `Faltan datos en la Sección 2.2.`;
+            return true;
+          }
+          if (!asig.tac_tabla || asig.tac_tabla.length === 0) {
+            mensajeFalta = `Faltan datos en la Sección 2.3.`;
+            return true;
+          }
+
+          return false;
+        },
+      );
+    }
+
+    if (formularioIncompleto) {
+      alert(
+        `Para descargar el PDF, debes completar las Secciones 1 y 2.\n\nDetalle: ${mensajeFalta}`,
+      );
+      return;
+    }
+    // =========================================================================
+
+    try {
+      const blob = await pdf(<PlantillaPDF datos={valoresActuales} />).toBlob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `Informe_${valoresActuales.docente_nombre || "Docente"}.pdf`;
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Error al generar el PDF:", error);
+      alert("Hubo un error al crear el documento PDF.");
+    }
+  };
+
+  // 👇 Función para bloquear letras en inputs number (Mantén esto igual)
+  const bloquearCaracteresInvalidos = (
+    e: React.KeyboardEvent<HTMLInputElement>,
+  ) => {
+    if (["e", "E", "+", "-", ".", ","].includes(e.key)) {
+      e.preventDefault();
+    }
+  };
+
+  // 👇 Progreso que observa TODOS los 27 campos requeridos por Asignatura
+  const asignaturasVigiladas = watch("asignaturas");
+
+  const calcularProgreso = () => {
+    if (!asignaturasVigiladas || asignaturasVigiladas.length === 0) return 0;
+
+    const camposSec1 = ["estudiantes", "asistencia", "aprobados", "reprobados"];
+    const camposSec2 = [
+      "resultados_tabla",
+      "res_criterios",
+      "res_instrumento",
+      "resultados_actividades",
+      "resultados_logro",
+      "res_acciones",
+      "res_propuestas",
+      "res_cumplimiento",
+      "hab_criterios",
+      "hab_instrumento",
+      "habilidades_actividades",
+      "habilidades_logro",
+      "hab_acciones",
+      "hab_propuestas",
+      "hab_cumplimiento",
+      "tac_herramienta",
+      "tac_actividades",
+      "tac_logro",
+      "tac_acciones",
+      "tac_propuestas",
+      "tac_cumplimiento",
+    ];
+
+    // 4 numéricos + 21 textos + 2 arrays de checkboxes = 27 requerimientos por materia
+    const camposPorMateria = camposSec1.length + camposSec2.length + 2;
+    const camposTotales = asignaturasVigiladas.length * camposPorMateria;
+    let camposLlenos = 0;
+
+    asignaturasVigiladas.forEach((asig: any) => {
+      // 1. Contar campos numéricos
+      camposSec1.forEach((campo) => {
+        if (asig[campo] !== "" && asig[campo] !== undefined) camposLlenos++;
+      });
+
+      // 2. Contar campos de texto
+      camposSec2.forEach((campo) => {
+        if (asig[campo] && asig[campo].trim() !== "") camposLlenos++;
+      });
+
+      // 3. Contar checkboxes seleccionados
+      if (asig.habilidades_tabla && asig.habilidades_tabla.length > 0)
+        camposLlenos++;
+      if (asig.tac_tabla && asig.tac_tabla.length > 0) camposLlenos++;
+    });
+
+    return Math.round((camposLlenos / camposTotales) * 100) || 0;
+  };
+
+  const progreso = calcularProgreso();
 
   const inputStyle = {
     width: "100%",
@@ -475,22 +640,6 @@ export default function NuevoInformePage() {
     fontSize: "0.95em",
   };
 
-  const descargarPDF = async () => {
-    try {
-      const valoresActuales = watch();
-      const blob = await pdf(<PlantillaPDF datos={valoresActuales} />).toBlob();
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `Informe_${valoresActuales.docente_nombre || "Docente"}.pdf`;
-      link.click();
-      URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error("Error al generar el PDF:", error);
-      alert("Hubo un error al crear el documento PDF.");
-    }
-  };
-
   return (
     <div
       style={{
@@ -530,6 +679,50 @@ export default function NuevoInformePage() {
       >
         Informe Unificado de Actividades y Evaluación Docente
       </h2>
+
+      {/* BARRA DE PROGRESO */}
+      <div
+        style={{
+          marginBottom: "25px",
+          backgroundColor: "#f3f4f6",
+          borderRadius: "8px",
+          padding: "15px",
+          boxShadow: "0 2px 4px rgba(0,0,0,0.05)",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            marginBottom: "8px",
+            fontWeight: "bold",
+            color: "#374151",
+          }}
+        >
+          <span>Progreso de Llenado</span>
+          <span style={{ color: progreso === 100 ? "#16a085" : "#2980b9" }}>
+            {progreso}%
+          </span>
+        </div>
+        <div
+          style={{
+            width: "100%",
+            height: "12px",
+            backgroundColor: "#e5e7eb",
+            borderRadius: "10px",
+            overflow: "hidden",
+          }}
+        >
+          <div
+            style={{
+              height: "100%",
+              width: `${progreso}%`,
+              backgroundColor: progreso === 100 ? "#2ecc71" : "#3498db",
+              transition: "width 0.4s ease-in-out",
+            }}
+          />
+        </div>
+      </div>
 
       <form onSubmit={handleSubmit(onSubmit)}>
         {/* ================= SECCIÓN 1 ================= */}
@@ -654,6 +847,8 @@ export default function NuevoInformePage() {
                     <input
                       {...register(`asignaturas.${index}.estudiantes`)}
                       type="number"
+                      min="0"
+                      onKeyDown={bloquearCaracteresInvalidos}
                       style={inputStyle}
                     />
                   </div>
@@ -661,6 +856,8 @@ export default function NuevoInformePage() {
                     <input
                       {...register(`asignaturas.${index}.asistencia`)}
                       type="number"
+                      min="0"
+                      onKeyDown={bloquearCaracteresInvalidos}
                       style={inputStyle}
                     />
                   </div>
@@ -668,6 +865,8 @@ export default function NuevoInformePage() {
                     <input
                       {...register(`asignaturas.${index}.aprobados`)}
                       type="number"
+                      min="0"
+                      onKeyDown={bloquearCaracteresInvalidos}
                       style={inputStyle}
                     />
                   </div>
@@ -675,6 +874,8 @@ export default function NuevoInformePage() {
                     <input
                       {...register(`asignaturas.${index}.reprobados`)}
                       type="number"
+                      min="0"
+                      onKeyDown={bloquearCaracteresInvalidos}
                       style={inputStyle}
                     />
                   </div>
@@ -1935,7 +2136,8 @@ export default function NuevoInformePage() {
                   <input
                     {...register("vinc_facultad")}
                     type="text"
-                    style={inputStyle}
+                    readOnly
+                    style={{ ...inputStyle, ...readOnlyStyle }}
                   />
                 </div>
                 <div>
@@ -2156,99 +2358,506 @@ export default function NuevoInformePage() {
           )}
         </fieldset>
 
-       {/* ================= SECCIÓN 6 ================= */}
-        <fieldset disabled={esSoloLectura} style={{ ...fieldsetStyle, borderColor: "#e67e22" }}>
-          <legend 
+        {/* ================= SECCIÓN 6 ================= */}
+        <fieldset
+          disabled={esSoloLectura}
+          style={{ ...fieldsetStyle, borderColor: "#e67e22" }}
+        >
+          <legend
             onClick={() => toggleAcordeon("sec6")}
-            style={{ ...legendStyle, color: "#e67e22", cursor: "pointer", userSelect: "none" }}
+            style={{
+              ...legendStyle,
+              color: "#e67e22",
+              cursor: "pointer",
+              userSelect: "none",
+            }}
           >
             6. INVESTIGACIÓN Y PUBLICACIONES
-            <span style={{ marginLeft: "15px", fontSize: "0.8em", backgroundColor: "#fbdcbf", padding: "4px 10px", borderRadius: "12px", color: "#d35400" }}>
+            <span
+              style={{
+                marginLeft: "15px",
+                fontSize: "0.8em",
+                backgroundColor: "#fbdcbf",
+                padding: "4px 10px",
+                borderRadius: "12px",
+                color: "#d35400",
+              }}
+            >
               {acordeon.sec6 ? "Ocultar ▲" : "Mostrar ▼"}
             </span>
           </legend>
 
           {acordeon.sec6 && (
             <div style={{ paddingTop: "10px" }}>
-              
               {/* ------------ SUBCATEGORÍA: PUBLICACIONES ------------ */}
-              <div style={subTitleStyle}>Publicaciones y Ponencias Acreditadas</div>
-              
+              <div style={subTitleStyle}>
+                Publicaciones y Ponencias Acreditadas
+              </div>
+
               <button
                 type="button"
-                onClick={() => appendPublicacion({ titulo: "", nombres: "", codigo_ies: "", tipo_pub: "", tipo_articulo: "", codigo_pub: "", base_indexada: "", issn: "", revista: "", fecha_pub: "", cargo: "", facultad: "", intercultural: "", link_pub: "", link_revista: "" })}
-                style={{ marginBottom: "15px", padding: "8px 15px", backgroundColor: "#e67e22", color: "white", border: "none", borderRadius: "4px", cursor: "pointer" }}
+                onClick={() =>
+                  appendPublicacion({
+                    titulo: "",
+                    nombres: "",
+                    codigo_ies: "",
+                    tipo_pub: "",
+                    tipo_articulo: "",
+                    codigo_pub: "",
+                    base_indexada: "",
+                    issn: "",
+                    revista: "",
+                    fecha_pub: "",
+                    cargo: "",
+                    facultad: "Facultad de Ingeniería y Ciencias Aplicadas", // 👈 VALOR POR DEFECTO AÑADIDO
+                    intercultural: "",
+                    link_pub: "",
+                    link_revista: "",
+                  })
+                }
+                style={{
+                  marginBottom: "15px",
+                  padding: "8px 15px",
+                  backgroundColor: "#e67e22",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "4px",
+                  cursor: "pointer",
+                }}
               >
                 + Añadir Publicación / Ponencia
               </button>
 
               {camposPublicaciones.map((campo, index) => (
-                <div key={campo.id} style={{ marginBottom: "20px", padding: "15px", backgroundColor: "#fff", border: "1px dashed #e67e22", borderRadius: "6px", position: "relative" }}>
-                  <button type="button" onClick={() => removePublicacion(index)} style={{ position: "absolute", top: "10px", right: "10px", background: "#c0392b", color: "#fff", border: "none", borderRadius: "3px", cursor: "pointer", padding: "4px 8px" }}>X Eliminar</button>
-                  
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "10px", marginTop: "15px" }}>
-                    <div style={{ gridColumn: "1 / -1" }}><label style={{ fontSize: "0.85em", color: "#555", fontWeight: "bold" }}>Título de Publicación:</label><input {...register(`publicaciones.${index}.titulo`)} type="text" style={inputStyle} /></div>
-                    <div style={{ gridColumn: "1 / -1" }}><label style={{ fontSize: "0.85em", color: "#555", fontWeight: "bold" }}>Nombres y Apellidos (Autores):</label><input {...register(`publicaciones.${index}.nombres`)} type="text" style={inputStyle} /></div>
-                    <div><label style={{ fontSize: "0.8em", color: "#555" }}>Código IES:</label><input {...register(`publicaciones.${index}.codigo_ies`)} type="text" style={inputStyle} /></div>
-                    <div><label style={{ fontSize: "0.8em", color: "#555" }}>Tipo Publicación:</label><input {...register(`publicaciones.${index}.tipo_pub`)} type="text" style={inputStyle} /></div>
-                    <div><label style={{ fontSize: "0.8em", color: "#555" }}>Tipo Artículo:</label><input {...register(`publicaciones.${index}.tipo_articulo`)} type="text" style={inputStyle} /></div>
-                    <div><label style={{ fontSize: "0.8em", color: "#555" }}>Código Publicación:</label><input {...register(`publicaciones.${index}.codigo_pub`)} type="text" style={inputStyle} /></div>
-                    <div><label style={{ fontSize: "0.8em", color: "#555" }}>Base Datos Indexada:</label><input {...register(`publicaciones.${index}.base_indexada`)} type="text" style={inputStyle} /></div>
-                    <div><label style={{ fontSize: "0.8em", color: "#555" }}>Código ISSN:</label><input {...register(`publicaciones.${index}.issn`)} type="text" style={inputStyle} /></div>
-                    <div style={{ gridColumn: "span 2" }}><label style={{ fontSize: "0.8em", color: "#555" }}>Nombre Revista:</label><input {...register(`publicaciones.${index}.revista`)} type="text" style={inputStyle} /></div>
-                    <div><label style={{ fontSize: "0.8em", color: "#555" }}>Fecha Publicación:</label><input {...register(`publicaciones.${index}.fecha_pub`)} type="date" style={inputStyle} /></div>
-                    <div><label style={{ fontSize: "0.8em", color: "#555" }}>Cargo Institucional:</label><input {...register(`publicaciones.${index}.cargo`)} type="text" style={inputStyle} /></div>
-                    <div><label style={{ fontSize: "0.8em", color: "#555" }}>Facultad:</label><input {...register(`publicaciones.${index}.facultad`)} type="text" style={inputStyle} /></div>
-                    <div><label style={{ fontSize: "0.8em", color: "#555" }}>Enfoque Intercultural:</label><input {...register(`publicaciones.${index}.intercultural`)} type="text" style={inputStyle} /></div>
-                    <div style={{ gridColumn: "1 / -1" }}><label style={{ fontSize: "0.8em", color: "#555" }}>Link Publicación:</label><input {...register(`publicaciones.${index}.link_pub`)} type="text" style={inputStyle} /></div>
-                    <div style={{ gridColumn: "1 / -1" }}><label style={{ fontSize: "0.8em", color: "#555" }}>Link Revista:</label><input {...register(`publicaciones.${index}.link_revista`)} type="text" style={inputStyle} /></div>
+                <div
+                  key={campo.id}
+                  style={{
+                    marginBottom: "20px",
+                    padding: "15px",
+                    backgroundColor: "#fff",
+                    border: "1px dashed #e67e22",
+                    borderRadius: "6px",
+                    position: "relative",
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => removePublicacion(index)}
+                    style={{
+                      position: "absolute",
+                      top: "10px",
+                      right: "10px",
+                      background: "#c0392b",
+                      color: "#fff",
+                      border: "none",
+                      borderRadius: "3px",
+                      cursor: "pointer",
+                      padding: "4px 8px",
+                    }}
+                  >
+                    X Eliminar
+                  </button>
+
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns:
+                        "repeat(auto-fit, minmax(200px, 1fr))",
+                      gap: "10px",
+                      marginTop: "15px",
+                    }}
+                  >
+                    <div style={{ gridColumn: "1 / -1" }}>
+                      <label
+                        style={{
+                          fontSize: "0.85em",
+                          color: "#555",
+                          fontWeight: "bold",
+                        }}
+                      >
+                        Título de Publicación:
+                      </label>
+                      <input
+                        {...register(`publicaciones.${index}.titulo`)}
+                        type="text"
+                        style={inputStyle}
+                      />
+                    </div>
+                    <div style={{ gridColumn: "1 / -1" }}>
+                      <label
+                        style={{
+                          fontSize: "0.85em",
+                          color: "#555",
+                          fontWeight: "bold",
+                        }}
+                      >
+                        Nombres y Apellidos (Autores):
+                      </label>
+                      <input
+                        {...register(`publicaciones.${index}.nombres`)}
+                        type="text"
+                        style={inputStyle}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: "0.8em", color: "#555" }}>
+                        Código IES:
+                      </label>
+                      <input
+                        {...register(`publicaciones.${index}.codigo_ies`)}
+                        type="text"
+                        style={inputStyle}
+                      />
+                    </div>
+
+                    {/* 👇 TIPO PUBLICACIÓN COMO SELECT */}
+                    <div>
+                      <label style={{ fontSize: "0.8em", color: "#555" }}>
+                        Tipo Publicación:
+                      </label>
+                      <select
+                        {...register(`publicaciones.${index}.tipo_pub`)}
+                        style={{ ...inputStyle, backgroundColor: "#fff" }}
+                      >
+                        <option value="">Seleccione...</option>
+                        <option value="Artículo">Artículo</option>
+                        <option value="Capítulo de Libro">
+                          Capítulo de Libro
+                        </option>
+                        <option value="Libro">Libro</option>
+                      </select>
+                    </div>
+
+                    {/* 👇 TIPO ARTÍCULO COMO SELECT */}
+                    <div>
+                      <label style={{ fontSize: "0.8em", color: "#555" }}>
+                        Tipo Artículo:
+                      </label>
+                      <select
+                        {...register(`publicaciones.${index}.tipo_articulo`)}
+                        style={{ ...inputStyle, backgroundColor: "#fff" }}
+                      >
+                        <option value="">Seleccione...</option>
+                        <option value="Revista">Revista</option>
+                        <option value="Congreso">Congreso</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: "0.8em", color: "#555" }}>
+                        Código Publicación:
+                      </label>
+                      <input
+                        {...register(`publicaciones.${index}.codigo_pub`)}
+                        type="text"
+                        style={inputStyle}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: "0.8em", color: "#555" }}>
+                        Base Datos Indexada:
+                      </label>
+                      <input
+                        {...register(`publicaciones.${index}.base_indexada`)}
+                        type="text"
+                        style={inputStyle}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: "0.8em", color: "#555" }}>
+                        Código ISSN:
+                      </label>
+                      <input
+                        {...register(`publicaciones.${index}.issn`)}
+                        type="text"
+                        style={inputStyle}
+                      />
+                    </div>
+                    <div style={{ gridColumn: "span 2" }}>
+                      <label style={{ fontSize: "0.8em", color: "#555" }}>
+                        Nombre Revista:
+                      </label>
+                      <input
+                        {...register(`publicaciones.${index}.revista`)}
+                        type="text"
+                        style={inputStyle}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: "0.8em", color: "#555" }}>
+                        Fecha Publicación:
+                      </label>
+                      <input
+                        {...register(`publicaciones.${index}.fecha_pub`)}
+                        type="date"
+                        style={inputStyle}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: "0.8em", color: "#555" }}>
+                        Cargo Institucional:
+                      </label>
+                      <input
+                        {...register(`publicaciones.${index}.cargo`)}
+                        type="text"
+                        style={inputStyle}
+                      />
+                    </div>
+
+                    {/* 👇 FACULTAD BLOQUEADA (SOLO LECTURA) */}
+                    <div>
+                      <label style={{ fontSize: "0.8em", color: "#555" }}>
+                        Facultad:
+                      </label>
+                      <input
+                        {...register(`publicaciones.${index}.facultad`)}
+                        type="text"
+                        defaultValue="Facultad de Ingeniería y Ciencias Aplicadas"
+                        readOnly // Bloquea la edición
+                        style={{ ...inputStyle, ...readOnlyStyle }} // Estilo grisáceo
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: "0.8em", color: "#555" }}>
+                        Enfoque Intercultural:
+                      </label>
+                      <input
+                        {...register(`publicaciones.${index}.intercultural`)}
+                        type="text"
+                        style={inputStyle}
+                      />
+                    </div>
+                    <div style={{ gridColumn: "1 / -1" }}>
+                      <label style={{ fontSize: "0.8em", color: "#555" }}>
+                        Link Publicación:
+                      </label>
+                      <input
+                        {...register(`publicaciones.${index}.link_pub`)}
+                        type="text"
+                        style={inputStyle}
+                      />
+                    </div>
+                    <div style={{ gridColumn: "1 / -1" }}>
+                      <label style={{ fontSize: "0.8em", color: "#555" }}>
+                        Link Revista:
+                      </label>
+                      <input
+                        {...register(`publicaciones.${index}.link_revista`)}
+                        type="text"
+                        style={inputStyle}
+                      />
+                    </div>
                   </div>
                 </div>
               ))}
 
               {camposPublicaciones.length === 0 && (
-                <p style={{ color: "#555", fontStyle: "italic", padding: "0 0 15px 0" }}>No hay publicaciones agregadas.</p>
+                <p
+                  style={{
+                    color: "#555",
+                    fontStyle: "italic",
+                    padding: "0 0 15px 0",
+                  }}
+                >
+                  No hay publicaciones agregadas.
+                </p>
               )}
 
-
               {/* ------------ SUBCATEGORÍA: PROYECTOS DE INVESTIGACIÓN ------------ */}
-              <div style={{ ...subTitleStyle, marginTop: "20px" }}>Proyectos de Investigación</div>
-              
+              <div style={{ ...subTitleStyle, marginTop: "20px" }}>
+                Proyectos de Investigación
+              </div>
+
               <button
                 type="button"
-                onClick={() => appendProyectoInv({ proyecto: "", institucion: "", cargo: "", fecha_designacion: "" })}
-                style={{ marginBottom: "15px", padding: "8px 15px", backgroundColor: "#e67e22", color: "white", border: "none", borderRadius: "4px", cursor: "pointer" }}
+                onClick={() =>
+                  appendProyectoInv({
+                    proyecto: "",
+                    institucion: "",
+                    cargo: "",
+                    fecha_designacion: "",
+                    fecha_inicio: "", // 👈 NUEVO CAMPO AL CREAR
+                    fecha_fin: "", // 👈 NUEVO CAMPO AL CREAR
+                  })
+                }
+                style={{
+                  marginBottom: "15px",
+                  padding: "8px 15px",
+                  backgroundColor: "#e67e22",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "4px",
+                  cursor: "pointer",
+                }}
               >
                 + Añadir Proyecto de Investigación
               </button>
 
               {camposProyectosInv.map((campo, index) => (
-                <div key={campo.id} style={{ marginBottom: "15px", padding: "15px", backgroundColor: "#fff", border: "1px dashed #e67e22", borderRadius: "6px", position: "relative" }}>
-                  <button type="button" onClick={() => removeProyectoInv(index)} style={{ position: "absolute", top: "10px", right: "10px", background: "#c0392b", color: "#fff", border: "none", borderRadius: "3px", cursor: "pointer", padding: "4px 8px" }}>X Eliminar</button>
-                  
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "10px", marginTop: "15px" }}>
+                <div
+                  key={campo.id}
+                  style={{
+                    marginBottom: "15px",
+                    padding: "15px",
+                    backgroundColor: "#fff",
+                    border: "1px dashed #e67e22",
+                    borderRadius: "6px",
+                    position: "relative",
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => removeProyectoInv(index)}
+                    style={{
+                      position: "absolute",
+                      top: "10px",
+                      right: "10px",
+                      background: "#c0392b",
+                      color: "#fff",
+                      border: "none",
+                      borderRadius: "3px",
+                      cursor: "pointer",
+                      padding: "4px 8px",
+                    }}
+                  >
+                    X Eliminar
+                  </button>
+
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns:
+                        "repeat(auto-fit, minmax(200px, 1fr))",
+                      gap: "10px",
+                      marginTop: "15px",
+                    }}
+                  >
                     <div style={{ gridColumn: "1 / -1" }}>
-                      <label style={{ fontSize: "0.85em", color: "#555", fontWeight: "bold" }}>Proyecto:</label>
-                      <input {...register(`proyectos_investigacion.${index}.proyecto`)} type="text" style={inputStyle} placeholder="Nombre del proyecto" />
+                      <label
+                        style={{
+                          fontSize: "0.85em",
+                          color: "#555",
+                          fontWeight: "bold",
+                        }}
+                      >
+                        Proyecto:
+                      </label>
+                      <input
+                        {...register(
+                          `proyectos_investigacion.${index}.proyecto`,
+                        )}
+                        type="text"
+                        style={inputStyle}
+                        placeholder="Nombre del proyecto"
+                      />
                     </div>
                     <div>
-                      <label style={{ fontSize: "0.85em", color: "#555", fontWeight: "bold" }}>Institución:</label>
-                      <input {...register(`proyectos_investigacion.${index}.institucion`)} type="text" style={inputStyle} />
+                      <label
+                        style={{
+                          fontSize: "0.85em",
+                          color: "#555",
+                          fontWeight: "bold",
+                        }}
+                      >
+                        Institución:
+                      </label>
+                      <input
+                        {...register(
+                          `proyectos_investigacion.${index}.institucion`,
+                        )}
+                        type="text"
+                        style={inputStyle}
+                      />
                     </div>
                     <div>
-                      <label style={{ fontSize: "0.85em", color: "#555", fontWeight: "bold" }}>Cargo:</label>
-                      <input {...register(`proyectos_investigacion.${index}.cargo`)} type="text" style={inputStyle} />
+                      <label
+                        style={{
+                          fontSize: "0.85em",
+                          color: "#555",
+                          fontWeight: "bold",
+                        }}
+                      >
+                        Cargo:
+                      </label>
+                      <input
+                        {...register(`proyectos_investigacion.${index}.cargo`)}
+                        type="text"
+                        style={inputStyle}
+                      />
                     </div>
                     <div>
-                      <label style={{ fontSize: "0.85em", color: "#555", fontWeight: "bold" }}>Fecha de designación:</label>
-                      <input {...register(`proyectos_investigacion.${index}.fecha_designacion`)} type="date" style={inputStyle} />
+                      <label
+                        style={{
+                          fontSize: "0.85em",
+                          color: "#555",
+                          fontWeight: "bold",
+                        }}
+                      >
+                        Fecha de designación:
+                      </label>
+                      <input
+                        {...register(
+                          `proyectos_investigacion.${index}.fecha_designacion`,
+                        )}
+                        type="date"
+                        style={inputStyle}
+                      />
+                    </div>
+
+                    {/* 👇 NUEVO: FECHA DE INICIO */}
+                    <div>
+                      <label
+                        style={{
+                          fontSize: "0.85em",
+                          color: "#555",
+                          fontWeight: "bold",
+                        }}
+                      >
+                        Fecha de inicio:
+                      </label>
+                      <input
+                        {...register(
+                          `proyectos_investigacion.${index}.fecha_inicio`,
+                        )}
+                        type="date"
+                        style={inputStyle}
+                      />
+                    </div>
+
+                    {/* 👇 NUEVO: FECHA DE FIN */}
+                    <div>
+                      <label
+                        style={{
+                          fontSize: "0.85em",
+                          color: "#555",
+                          fontWeight: "bold",
+                        }}
+                      >
+                        Fecha de fin:
+                      </label>
+                      <input
+                        {...register(
+                          `proyectos_investigacion.${index}.fecha_fin`,
+                        )}
+                        type="date"
+                        style={inputStyle}
+                      />
                     </div>
                   </div>
                 </div>
               ))}
 
               {camposProyectosInv.length === 0 && (
-                <p style={{ color: "#555", fontStyle: "italic", padding: "0 0 10px 0" }}>No hay proyectos de investigación agregados.</p>
+                <p
+                  style={{
+                    color: "#555",
+                    fontStyle: "italic",
+                    padding: "0 0 10px 0",
+                  }}
+                >
+                  No hay proyectos de investigación agregados.
+                </p>
               )}
             </div>
           )}
@@ -2287,6 +2896,49 @@ export default function NuevoInformePage() {
                 style={{ ...inputStyle, marginBottom: "10px" }}
               ></textarea>
 
+              {/* 👇 NUEVOS CAMPOS: FECHAS DE DESIGNACIÓN */}
+              <div
+                style={{
+                  display: "flex",
+                  gap: "15px",
+                  marginBottom: "15px",
+                  flexWrap: "wrap",
+                }}
+              >
+                <div style={{ flex: 1, minWidth: "150px" }}>
+                  <label
+                    style={{
+                      fontSize: "0.85em",
+                      color: "#555",
+                      fontWeight: "bold",
+                    }}
+                  >
+                    Fecha de inicio (Designación):
+                  </label>
+                  <input
+                    {...register("designaciones_fecha_inicio")}
+                    type="date"
+                    style={inputStyle}
+                  />
+                </div>
+                <div style={{ flex: 1, minWidth: "150px" }}>
+                  <label
+                    style={{
+                      fontSize: "0.85em",
+                      color: "#555",
+                      fontWeight: "bold",
+                    }}
+                  >
+                    Fecha de fin (Designación):
+                  </label>
+                  <input
+                    {...register("designaciones_fecha_fin")}
+                    type="date"
+                    style={inputStyle}
+                  />
+                </div>
+              </div>
+
               <div
                 style={{
                   display: "flex",
@@ -2294,10 +2946,12 @@ export default function NuevoInformePage() {
                   marginTop: "15px",
                   minWidth: 0,
                   flexWrap: "wrap",
+                  borderTop: "1px solid #ddd" /* 👈 Línea separadora sutil */,
+                  paddingTop: "15px",
                 }}
               >
                 <div style={{ flex: 1, minWidth: "150px" }}>
-                  <label>Fecha de elaboración:</label>
+                  <label>Fecha de elaboración (Informe):</label>
                   <input
                     {...register("fecha_elaboracion")}
                     type="date"
@@ -2336,7 +2990,7 @@ export default function NuevoInformePage() {
                 fontWeight: "bold",
               }}
             >
-              {cargando ? "Guardando en MongoDB..." : "Guardar Informe"}
+              {cargando ? "Guardando..." : "Guardar Informe"}
             </button>
           )}
 

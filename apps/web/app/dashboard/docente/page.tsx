@@ -10,7 +10,9 @@ export default function DocenteDashboard() {
   const [usuario, setUsuario] = useState<any>(null);
   const [informes, setInformes] = useState<any[]>([]);
 
-  // 1. Cargar datos del usuario y sus informes al entrar
+  // 👇 1. Definimos el periodo actual para las validaciones
+  const PERIODO_ACTUAL = "2026-2026";
+
   useEffect(() => {
     const usuarioGuardado = localStorage.getItem("usuario");
     if (usuarioGuardado) {
@@ -22,7 +24,6 @@ export default function DocenteDashboard() {
     }
   }, [router]);
 
-  // 2. Función para obtener los informes desde el backend
   const cargarMisInformes = async (cedula: string) => {
     try {
       const respuesta = await fetch(
@@ -37,7 +38,6 @@ export default function DocenteDashboard() {
     }
   };
 
-  // 👇 NUEVO: Función para eliminar un informe
   const eliminarInforme = async (id: string) => {
     const confirmar = window.confirm(
       "¿Estás seguro de que deseas eliminar este informe? Esta acción no se puede deshacer.",
@@ -51,27 +51,39 @@ export default function DocenteDashboard() {
 
       if (respuesta.ok) {
         alert("¡Informe eliminado correctamente!");
-        // Recargamos la tabla automáticamente
         if (usuario?.cedula) {
           cargarMisInformes(usuario.cedula);
         }
       } else {
-        alert("Hubo un error al eliminar el informe.");
+        alert("Error al eliminar el informe.");
       }
     } catch (error: any) {
       alert("Error de red: " + error.message);
     }
   };
 
-  // 3. Función para cerrar sesión
   const cerrarSesion = () => {
     localStorage.removeItem("usuario");
     router.push("/login");
   };
 
+  // 👇 2. Variable que detecta si ya existe un informe para el periodo actual
+  const yaTieneInformeActual = informes.some(
+    (inf: any) => inf.periodoAcademico === PERIODO_ACTUAL
+  );
+
+  // 👇 3. Función centralizada para manejar los clics de "Nuevo Informe"
+  const manejarNuevoInforme = () => {
+    if (yaTieneInformeActual) {
+      alert(`⚠️ Ya tienes un informe creado para el período ${PERIODO_ACTUAL}.\n\nPor favor, utiliza el botón "Ver / Editar" en la tabla para continuar trabajando en él.`);
+    } else {
+      router.push("/dashboard/docente/nuevo");
+    }
+  };
+
   return (
     <div className={styles.container}>
-      {/* BARRA LATERAL (Con tus estilos originales) */}
+      {/* BARRA LATERAL */}
       <aside className={styles.sidebar}>
         <h2>Panel Docente</h2>
         <ul style={{ marginTop: "2rem", listStyle: "none", padding: 0 }}>
@@ -84,13 +96,20 @@ export default function DocenteDashboard() {
           >
             Mis Informes
           </li>
-          <li>
-            <Link
-              href="/dashboard/docente/nuevo"
-              style={{ color: "inherit", textDecoration: "none" }}
+          <li style={{ marginBottom: "1rem" }}>
+            {/* 👇 Aplicamos el bloqueo en el enlace del sidebar */}
+            <span
+              onClick={manejarNuevoInforme}
+              style={{
+                color: yaTieneInformeActual ? "#6b7280" : "inherit",
+                textDecoration: "none",
+                cursor: yaTieneInformeActual ? "not-allowed" : "pointer",
+                display: "block"
+              }}
+              title={yaTieneInformeActual ? "Ya existe un informe para este periodo" : "Crear nuevo informe"}
             >
               + Nuevo Informe
-            </Link>
+            </span>
           </li>
           <li style={{ marginBottom: "1rem" }}>
             <Link
@@ -102,7 +121,6 @@ export default function DocenteDashboard() {
           </li>
         </ul>
 
-        {/* Botón de cerrar sesión en la barra lateral */}
         <button
           onClick={cerrarSesion}
           style={{
@@ -137,24 +155,25 @@ export default function DocenteDashboard() {
             }}
           >
             <h3 style={{ margin: 0 }}>Informes Recientes</h3>
-            <Link href="/dashboard/docente/nuevo">
-              <button
-                style={{
-                  padding: "0.6rem 1.2rem",
-                  background: "#2563eb",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "4px",
-                  cursor: "pointer",
-                  fontWeight: "bold",
-                }}
-              >
-                + Nuevo Informe
-              </button>
-            </Link>
+            
+            {/* 👇 Aplicamos el bloqueo en el botón principal */}
+            <button
+              onClick={manejarNuevoInforme}
+              style={{
+                padding: "0.6rem 1.2rem",
+                background: yaTieneInformeActual ? "#9ca3af" : "#2563eb",
+                color: "white",
+                border: "none",
+                borderRadius: "4px",
+                cursor: yaTieneInformeActual ? "not-allowed" : "pointer",
+                fontWeight: "bold",
+              }}
+              title={yaTieneInformeActual ? "Solo puedes tener un informe activo por periodo" : "Crear nuevo informe"}
+            >
+              + Nuevo Informe
+            </button>
           </div>
 
-          {/* Renderizado condicional: Mensaje vacío o Tabla */}
           {informes.length === 0 ? (
             <p style={{ color: "#777" }}>
               Aún no has creado ningún informe para este período académico.
@@ -200,7 +219,18 @@ export default function DocenteDashboard() {
                     >
                       Fecha de Creación
                     </th>
-                    {/* 👇 NUEVA COLUMNA DE CABECERA */}
+                    
+                    {/* 👇 NUEVA CABECERA DE PROGRESO */}
+                    <th
+                      style={{
+                        padding: "12px",
+                        borderBottom: "2px solid #d1d5db",
+                        textAlign: "center",
+                      }}
+                    >
+                      Progreso
+                    </th>
+
                     <th
                       style={{
                         padding: "12px",
@@ -245,7 +275,25 @@ export default function DocenteDashboard() {
                         {new Date(informe.createdAt).toLocaleDateString()}
                       </td>
 
-                      {/* 👇 NUEVOS BOTONES DE ACCIÓN */}
+                      {/* 👇 NUEVA CELDA CON LA BARRA DE PROGRESO */}
+                      <td style={{ padding: "12px", textAlign: "center", width: "150px" }}>
+                        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "5px" }}>
+                          <div style={{ width: "100%", backgroundColor: "#e5e7eb", borderRadius: "10px", height: "8px", overflow: "hidden" }}>
+                            <div 
+                              style={{ 
+                                width: `${informe.progreso || 0}%`, 
+                                backgroundColor: informe.progreso === 100 ? "#2ecc71" : "#3498db", 
+                                height: "100%",
+                                transition: "width 0.3s ease"
+                              }} 
+                            />
+                          </div>
+                          <span style={{ fontSize: "0.85em", color: "#555", fontWeight: "bold" }}>
+                            {informe.progreso || 0}%
+                          </span>
+                        </div>
+                      </td>
+
                       <td
                         style={{
                           padding: "12px",
