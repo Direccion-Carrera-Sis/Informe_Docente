@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 
 import {
@@ -8,6 +10,7 @@ import {
   Param,
   Put,
   Delete,
+  Query, // 👈 Importamos Query
 } from '@nestjs/common';
 import { InformesService } from './informes.service';
 
@@ -20,7 +23,7 @@ export class InformesController {
     console.log('✅ PETICIÓN RECIBIDA EN /informes');
     console.log('👤 Docente ID:', datos.docenteId);
 
-    // Guardamos los datos directamente en MongoDB usando tu servicio
+    // Al crear, el servicio extraerá automáticamente el autor desde datos.docenteId
     return this.informesService.crear(datos);
   }
 
@@ -42,11 +45,12 @@ export class InformesController {
 
   @Put(':id')
   update(@Param('id') id: string, @Body() updateData: any) {
-    return this.informesService.update(id, updateData);
+    const usuarioEjecutorId = updateData.docenteId || 'Desconocido';
+    return this.informesService.update(id, updateData, usuarioEjecutorId);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.informesService.remove(id);
+  remove(@Param('id') id: string, @Query('usuarioId') usuarioId: string) {
+    return this.informesService.remove(id, usuarioId);
   }
 }
