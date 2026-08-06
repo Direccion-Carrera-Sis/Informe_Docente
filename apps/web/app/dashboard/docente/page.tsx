@@ -45,9 +45,12 @@ export default function DocenteDashboard() {
     if (!confirmar) return;
 
     try {
-      const respuesta = await fetch(`http://localhost:4000/informes/${id}`, {
-        method: "DELETE",
-      });
+      const respuesta = await fetch(
+        `http://localhost:4000/informes/${id}?usuarioId=${usuario?.cedula ?? ""}`,
+        {
+          method: "DELETE",
+        },
+      );
 
       if (respuesta.ok) {
         alert("¡Informe eliminado correctamente!");
@@ -69,13 +72,15 @@ export default function DocenteDashboard() {
 
   // 👇 2. Variable que detecta si ya existe un informe para el periodo actual
   const yaTieneInformeActual = informes.some(
-    (inf: any) => inf.periodoAcademico === PERIODO_ACTUAL
+    (inf: any) => inf.periodoAcademico === PERIODO_ACTUAL,
   );
 
   // 👇 3. Función centralizada para manejar los clics de "Nuevo Informe"
   const manejarNuevoInforme = () => {
     if (yaTieneInformeActual) {
-      alert(`⚠️ Ya tienes un informe creado para el período ${PERIODO_ACTUAL}.\n\nPor favor, utiliza el botón "Ver / Editar" en la tabla para continuar trabajando en él.`);
+      alert(
+        `⚠️ Ya tienes un informe creado para el período ${PERIODO_ACTUAL}.\n\nPor favor, utiliza el botón "Ver / Editar" en la tabla para continuar trabajando en él.`,
+      );
     } else {
       router.push("/dashboard/docente/nuevo");
     }
@@ -104,9 +109,13 @@ export default function DocenteDashboard() {
                 color: yaTieneInformeActual ? "#6b7280" : "inherit",
                 textDecoration: "none",
                 cursor: yaTieneInformeActual ? "not-allowed" : "pointer",
-                display: "block"
+                display: "block",
               }}
-              title={yaTieneInformeActual ? "Ya existe un informe para este periodo" : "Crear nuevo informe"}
+              title={
+                yaTieneInformeActual
+                  ? "Ya existe un informe para este periodo"
+                  : "Crear nuevo informe"
+              }
             >
               + Nuevo Informe
             </span>
@@ -155,7 +164,7 @@ export default function DocenteDashboard() {
             }}
           >
             <h3 style={{ margin: 0 }}>Informes Recientes</h3>
-            
+
             {/* 👇 Aplicamos el bloqueo en el botón principal */}
             <button
               onClick={manejarNuevoInforme}
@@ -168,7 +177,11 @@ export default function DocenteDashboard() {
                 cursor: yaTieneInformeActual ? "not-allowed" : "pointer",
                 fontWeight: "bold",
               }}
-              title={yaTieneInformeActual ? "Solo puedes tener un informe activo por periodo" : "Crear nuevo informe"}
+              title={
+                yaTieneInformeActual
+                  ? "Solo puedes tener un informe activo por periodo"
+                  : "Crear nuevo informe"
+              }
             >
               + Nuevo Informe
             </button>
@@ -219,7 +232,7 @@ export default function DocenteDashboard() {
                     >
                       Fecha de Creación
                     </th>
-                    
+
                     {/* 👇 NUEVA CABECERA DE PROGRESO */}
                     <th
                       style={{
@@ -276,19 +289,49 @@ export default function DocenteDashboard() {
                       </td>
 
                       {/* 👇 NUEVA CELDA CON LA BARRA DE PROGRESO */}
-                      <td style={{ padding: "12px", textAlign: "center", width: "150px" }}>
-                        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "5px" }}>
-                          <div style={{ width: "100%", backgroundColor: "#e5e7eb", borderRadius: "10px", height: "8px", overflow: "hidden" }}>
-                            <div 
-                              style={{ 
-                                width: `${informe.progreso || 0}%`, 
-                                backgroundColor: informe.progreso === 100 ? "#2ecc71" : "#3498db", 
+                      <td
+                        style={{
+                          padding: "12px",
+                          textAlign: "center",
+                          width: "150px",
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "center",
+                            gap: "5px",
+                          }}
+                        >
+                          <div
+                            style={{
+                              width: "100%",
+                              backgroundColor: "#e5e7eb",
+                              borderRadius: "10px",
+                              height: "8px",
+                              overflow: "hidden",
+                            }}
+                          >
+                            <div
+                              style={{
+                                width: `${informe.progreso || 0}%`,
+                                backgroundColor:
+                                  informe.progreso === 100
+                                    ? "#2ecc71"
+                                    : "#3498db",
                                 height: "100%",
-                                transition: "width 0.3s ease"
-                              }} 
+                                transition: "width 0.3s ease",
+                              }}
                             />
                           </div>
-                          <span style={{ fontSize: "0.85em", color: "#555", fontWeight: "bold" }}>
+                          <span
+                            style={{
+                              fontSize: "0.85em",
+                              color: "#555",
+                              fontWeight: "bold",
+                            }}
+                          >
                             {informe.progreso || 0}%
                           </span>
                         </div>
