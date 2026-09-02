@@ -10,9 +10,6 @@ export default function DocenteDashboard() {
   const [usuario, setUsuario] = useState<any>(null);
   const [informes, setInformes] = useState<any[]>([]);
 
-  // 👇 1. Definimos el periodo actual para las validaciones
-  const PERIODO_ACTUAL = "2026-2026";
-
   useEffect(() => {
     const usuarioGuardado = localStorage.getItem("usuario");
     if (usuarioGuardado) {
@@ -27,7 +24,7 @@ export default function DocenteDashboard() {
   const cargarMisInformes = async (cedula: string) => {
     try {
       const respuesta = await fetch(
-        `http://localhost:4000/informes/docente/${cedula}`,
+        `http://127.0.0.1:4000/informes/docente/${cedula}`,
       );
       if (respuesta.ok) {
         const data = await respuesta.json();
@@ -46,7 +43,7 @@ export default function DocenteDashboard() {
 
     try {
       const respuesta = await fetch(
-        `http://localhost:4000/informes/${id}?usuarioId=${usuario?.cedula ?? ""}`,
+        `http://127.0.0.1:4000/informes/${id}?usuarioId=${usuario?.cedula ?? ""}`,
         {
           method: "DELETE",
         },
@@ -65,25 +62,57 @@ export default function DocenteDashboard() {
     }
   };
 
+  const entregarInforme = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+    informeId: string
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (file.type !== "application/pdf") {
+      alert("⚠️ Por favor, sube únicamente un archivo en formato PDF.");
+      return;
+    }
+
+    const confirmar = window.confirm(
+      "¿Estás seguro de entregar el informe final firmado? Una vez entregado, pasará a revisión y ya no podrás editarlo."
+    );
+    if (!confirmar) return;
+
+    try {
+      const payload = {
+        estado: "Entregado",
+        docenteId: usuario?.cedula, 
+      };
+
+      const respuesta = await fetch(
+        `http://127.0.0.1:4000/informes/${informeId}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        }
+      );
+
+      if (respuesta.ok) {
+        alert("¡Informe firmado y entregado con éxito!");
+        if (usuario?.cedula) cargarMisInformes(usuario.cedula);
+      } else {
+        alert("Hubo un error al intentar cambiar el estado del informe.");
+      }
+    } catch (error: any) {
+      alert("Error de red: " + error.message);
+    }
+  };
+
   const cerrarSesion = () => {
     localStorage.removeItem("usuario");
     router.push("/login");
   };
 
-  // 👇 2. Variable que detecta si ya existe un informe para el periodo actual
-  const yaTieneInformeActual = informes.some(
-    (inf: any) => inf.periodoAcademico === PERIODO_ACTUAL,
-  );
-
-  // 👇 3. Función centralizada para manejar los clics de "Nuevo Informe"
+  // 👇 Ahora simplemente redirige sin validaciones
   const manejarNuevoInforme = () => {
-    if (yaTieneInformeActual) {
-      alert(
-        `⚠️ Ya tienes un informe creado para el período ${PERIODO_ACTUAL}.\n\nPor favor, utiliza el botón "Ver / Editar" en la tabla para continuar trabajando en él.`,
-      );
-    } else {
-      router.push("/dashboard/docente/nuevo");
-    }
+    router.push("/dashboard/docente/nuevo");
   };
 
   return (
@@ -102,20 +131,15 @@ export default function DocenteDashboard() {
             Mis Informes
           </li>
           <li style={{ marginBottom: "1rem" }}>
-            {/* 👇 Aplicamos el bloqueo en el enlace del sidebar */}
             <span
               onClick={manejarNuevoInforme}
               style={{
-                color: yaTieneInformeActual ? "#6b7280" : "inherit",
+                color: "inherit",
                 textDecoration: "none",
-                cursor: yaTieneInformeActual ? "not-allowed" : "pointer",
+                cursor: "pointer",
                 display: "block",
               }}
-              title={
-                yaTieneInformeActual
-                  ? "Ya existe un informe para este periodo"
-                  : "Crear nuevo informe"
-              }
+              title="Crear nuevo informe"
             >
               + Nuevo Informe
             </span>
@@ -165,23 +189,19 @@ export default function DocenteDashboard() {
           >
             <h3 style={{ margin: 0 }}>Informes Recientes</h3>
 
-            {/* 👇 Aplicamos el bloqueo en el botón principal */}
+            {/* 👇 Botón desbloqueado */}
             <button
               onClick={manejarNuevoInforme}
               style={{
                 padding: "0.6rem 1.2rem",
-                background: yaTieneInformeActual ? "#9ca3af" : "#2563eb",
+                background: "#2563eb",
                 color: "white",
                 border: "none",
                 borderRadius: "4px",
-                cursor: yaTieneInformeActual ? "not-allowed" : "pointer",
+                cursor: "pointer",
                 fontWeight: "bold",
               }}
-              title={
-                yaTieneInformeActual
-                  ? "Solo puedes tener un informe activo por periodo"
-                  : "Crear nuevo informe"
-              }
+              title="Crear nuevo informe"
             >
               + Nuevo Informe
             </button>
@@ -189,7 +209,7 @@ export default function DocenteDashboard() {
 
           {informes.length === 0 ? (
             <p style={{ color: "#777" }}>
-              Aún no has creado ningún informe para este período académico.
+              Aún no has creado ningún informe.
             </p>
           ) : (
             <div style={{ overflowX: "auto" }}>
@@ -232,8 +252,6 @@ export default function DocenteDashboard() {
                     >
                       Fecha de Creación
                     </th>
-
-                    {/* 👇 NUEVA CABECERA DE PROGRESO */}
                     <th
                       style={{
                         padding: "12px",
@@ -243,7 +261,6 @@ export default function DocenteDashboard() {
                     >
                       Progreso
                     </th>
-
                     <th
                       style={{
                         padding: "12px",
@@ -267,7 +284,10 @@ export default function DocenteDashboard() {
                       <td style={{ padding: "12px" }}>
                         <span
                           style={{
-                            backgroundColor: "#f59e0b",
+                            backgroundColor:
+                              informe.estado === "Entregado"
+                                ? "#10b981"
+                                : "#f59e0b",
                             color: "#fff",
                             padding: "4px 8px",
                             borderRadius: "12px",
@@ -288,7 +308,6 @@ export default function DocenteDashboard() {
                         {new Date(informe.createdAt).toLocaleDateString()}
                       </td>
 
-                      {/* 👇 NUEVA CELDA CON LA BARRA DE PROGRESO */}
                       <td
                         style={{
                           padding: "12px",
@@ -343,8 +362,34 @@ export default function DocenteDashboard() {
                           display: "flex",
                           gap: "10px",
                           justifyContent: "center",
+                          alignItems: "center",
                         }}
                       >
+                        {informe.progreso === 100 &&
+                          informe.estado === "Borrador" && (
+                            <label
+                              style={{
+                                backgroundColor: "#10b981",
+                                color: "white",
+                                border: "none",
+                                padding: "6px 12px",
+                                borderRadius: "4px",
+                                cursor: "pointer",
+                                fontSize: "0.9em",
+                                fontWeight: "bold",
+                                margin: 0,
+                              }}
+                            >
+                              Subir Firmado
+                              <input
+                                type="file"
+                                accept="application/pdf"
+                                style={{ display: "none" }}
+                                onChange={(e) => entregarInforme(e, informe._id)}
+                              />
+                            </label>
+                          )}
+
                         <button
                           onClick={() =>
                             router.push(
@@ -361,7 +406,9 @@ export default function DocenteDashboard() {
                             fontSize: "0.9em",
                           }}
                         >
-                          Ver / Editar
+                          {informe.estado === "Entregado"
+                            ? "Ver Informe"
+                            : "Ver / Editar"}
                         </button>
 
                         <button

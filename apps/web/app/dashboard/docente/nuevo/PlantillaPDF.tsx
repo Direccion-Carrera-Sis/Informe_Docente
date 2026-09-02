@@ -845,7 +845,7 @@ export const PlantillaPDF = ({ datos }: { datos: InformeData }) => {
             <Text style={[styles.tableCell, { width: "35%" }]}>
               Institución
             </Text>
-            <Text style={[styles.tableCellLast, { width: "15%" }]}>Estado</Text>
+            <Text style={[styles.tableCellLast, { width: "15%" }]}>Avance (%)</Text>
           </View>
           {datos?.vinc_nombre ? (
             <View style={styles.tableRowLast} wrap={false}>

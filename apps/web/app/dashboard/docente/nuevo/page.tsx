@@ -2105,7 +2105,7 @@ reset({
                 </div>
                 <div>
                   <label style={{ fontSize: "0.8em", color: "#555" }}>
-                    Estado:
+                    Avance (%):
                   </label>
                   <input
                     {...register("vinc_estado")}
