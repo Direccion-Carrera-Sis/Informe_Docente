@@ -17,7 +17,7 @@ export default function LoginPage() {
 
     try {
       // Llamamos a la ruta de NestJS que acabamos de crear
-      const respuesta = await fetch('http://localhost:4000/auth/login', {
+      const respuesta = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

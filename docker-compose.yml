@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  # 1. BASE DE DATOS MONGODB
+  mongodb:
+    image: mongo:latest
+    container_name: informes_mongodb
+    restart: always
+    ports:
+      - "27017:27017"
+    volumes:
+      - datos_informes_uce:/data/db # Volumen persistente para no perder datos
+
+  # 2. BACKEND (NestJS)
+  api:
+    build:
+      context: . # Construye desde la raíz del monorepo
+      dockerfile: apps/api/Dockerfile
+    container_name: informes_api
+    restart: always
+    ports:
+      - "4000:4000"
+    environment:
+      # Conexión interna directa al contenedor de MongoDB
+      - MONGODB_URI=mongodb://mongodb:27017/sistema-informes-uce
+      # URL permitida para evitar bloqueos de CORS
+      - FRONTEND_URL=http://localhost:3000
+      # Credenciales del administrador inicial
+      - ADMIN_CORREO=admin@uce.edu.ec
+      - ADMIN_CLAVE=admin123
+      - ADMIN_CEDULA=0000000000
+      - PERIODO_ACTUAL=2026-2026
+    depends_on:
+      - mongodb
+
+  # 3. FRONTEND (Next.js)
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    container_name: informes_web
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      # Aunque el contenedor internamente corra, la web se visualiza en el navegador del usuario
+      # Por lo que debe apuntar a la IP pública/local del servidor. 
+      # Si accedes desde la misma máquina, localhost funciona. Si es en red, pon la IP del servidor.
+      - NEXT_PUBLIC_API_URL=http://localhost:4000 
+    depends_on:
+      - api
+
+# Declaración del volumen
+volumes:
+  datos_informes_uce:

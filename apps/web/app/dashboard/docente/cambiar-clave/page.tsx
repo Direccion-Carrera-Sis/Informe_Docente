@@ -50,7 +50,7 @@ export default function CambiarClavePage() {
 
     setCargando(true);
     try {
-      const respuesta = await fetch(`http://localhost:4000/usuarios/docente/${cedula}/cambiar-clave`, {
+      const respuesta = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/usuarios/docente/${cedula}/cambiar-clave`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

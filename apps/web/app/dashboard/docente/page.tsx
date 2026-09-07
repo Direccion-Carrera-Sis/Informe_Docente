@@ -24,7 +24,7 @@ export default function DocenteDashboard() {
   const cargarMisInformes = async (cedula: string) => {
     try {
       const respuesta = await fetch(
-        `http://127.0.0.1:4000/informes/docente/${cedula}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/informes/docente/${cedula}`,
       );
       if (respuesta.ok) {
         const data = await respuesta.json();
@@ -43,7 +43,7 @@ export default function DocenteDashboard() {
 
     try {
       const respuesta = await fetch(
-        `http://127.0.0.1:4000/informes/${id}?usuarioId=${usuario?.cedula ?? ""}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/informes/${id}?usuarioId=${usuario?.cedula ?? ""}`,
         {
           method: "DELETE",
         },
@@ -86,7 +86,7 @@ export default function DocenteDashboard() {
       };
 
       const respuesta = await fetch(
-        `http://127.0.0.1:4000/informes/${informeId}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/informes/${informeId}`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },

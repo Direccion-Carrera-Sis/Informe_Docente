@@ -183,7 +183,7 @@ export default function NuevoInformePage() {
 
   const cargarInformeExistente = async (id: string) => {
     try {
-      const res = await fetch(`http://localhost:4000/informes/${id}`);
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/informes/${id}`);
 
       if (res.ok) {
         const bd = await res.json();
@@ -275,10 +275,10 @@ reset({
 
       const [resMaterias, resTit] = await Promise.all([
         fetch(
-          `http://localhost:4000/asignaciones/docente/${datosUsuario.cedula}`,
+          `${process.env.NEXT_PUBLIC_API_URL}/asignaciones/docente/${datosUsuario.cedula}`,
         ),
         fetch(
-          `http://localhost:4000/titulaciones/docente/${datosUsuario.cedula}`,
+          `${process.env.NEXT_PUBLIC_API_URL}/titulaciones/docente/${datosUsuario.cedula}`,
         ),
       ]);
 
@@ -397,8 +397,8 @@ reset({
       };
 
       const url = informeId
-        ? `http://localhost:4000/informes/${informeId}`
-        : "http://localhost:4000/informes";
+        ? `${process.env.NEXT_PUBLIC_API_URL}/informes/${informeId}`
+        : `${process.env.NEXT_PUBLIC_API_URL}/informes`;
 
       const metodo = informeId ? "PUT" : "POST";
 

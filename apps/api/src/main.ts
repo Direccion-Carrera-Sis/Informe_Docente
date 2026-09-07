@@ -6,12 +6,15 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   app.enableCors({
-    origin: 'http://localhost:3000', // Solo permitimos peticiones de tu frontend
+    // Permite que la URL del frontend se inyecte desde el servidor, o usa localhost
+    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,
   });
 
-  // Asegúrate de que tu puerto siga siendo el 4000
-  await app.listen(4000);
+  const port = process.env.PORT || 4000;
+  // Añadimos '0.0.0.0' para que Docker asigne correctamente las interfaces de red
+  await app.listen(port, '0.0.0.0');
+  console.log(`🚀 API corriendo en el puerto ${port}`);
 }
 bootstrap();

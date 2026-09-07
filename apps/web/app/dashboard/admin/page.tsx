@@ -37,7 +37,7 @@ export default function AdminDashboard() {
   // 👉 NUEVO: Función para traer informes de la BD
   const cargarTodosLosInformes = async () => {
     try {
-      const respuesta = await fetch(`http://localhost:4000/informes`);
+      const respuesta = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/informes`);
       if (respuesta.ok) {
         const data = await respuesta.json();
         setInformesGlobales(data);
@@ -72,12 +72,12 @@ export default function AdminDashboard() {
 
     const urlDestino =
       tipoCSV === "docentes"
-        ? "http://localhost:4000/usuarios/upload"
+        ? `${process.env.NEXT_PUBLIC_API_URL}/usuarios/upload`
         : tipoCSV === "materias"
-          ? "http://localhost:4000/asignaciones/upload"
+          ? `${process.env.NEXT_PUBLIC_API_URL}/asignaciones/upload`
           : tipoCSV === "titulacion"
-            ? "http://localhost:4000/titulaciones/upload"
-            : "http://localhost:4000/asignaciones/upload";
+            ? `${process.env.NEXT_PUBLIC_API_URL}/titulaciones/upload`
+            : `${process.env.NEXT_PUBLIC_API_URL}/asignaciones/upload`;
 
     try {
       const respuesta = await fetch(urlDestino, {
