@@ -190,6 +190,13 @@ const styles = StyleSheet.create({
     marginBottom: 3,
     color: "#000",
   },
+  legendText: {
+    fontSize: 7,
+    color: "#555",
+    marginTop: 2,
+    marginBottom: 10,
+    fontStyle: "italic",
+  },
 
   signatureContainer: {
     marginTop: 50,
@@ -353,17 +360,16 @@ export const PlantillaPDF = ({ datos }: { datos: InformeData }) => {
                   { width: "100%", textAlign: "center" },
                 ]}
               >
-                No registra asignaturas
+                N/A
               </Text>
             </View>
           )}
         </View>
-        <Text style={styles.noteText}>
-          Es importante mencionar que en todas las clases se toma asistencia a
-          los alumnos.
-        </Text>
+        {(!datos?.asignaturas || datos.asignaturas.length === 0) && (
+          <Text style={styles.legendText}>* N/A: No Aplica</Text>
+        )}
 
-        {/* 2. EVALUACIÓN ESPECÍFICA (AHORA EN TABLAS) */}
+        {/* 2. EVALUACIÓN ESPECÍFICA */}
         <Text style={styles.sectionTitle}>
           2. Evaluación Específica por Asignatura
         </Text>
@@ -382,82 +388,37 @@ export const PlantillaPDF = ({ datos }: { datos: InformeData }) => {
                 </Text>
                 <View style={styles.table}>
                   <View style={[styles.tableRow, styles.tableHeader]}>
-                    <Text
-                      style={[
-                        styles.tableCell,
-                        { width: "25%", textAlign: "center" },
-                      ]}
-                    >
-                      Resultado
-                    </Text>
-                    <Text
-                      style={[
-                        styles.tableCell,
-                        { width: "20%", textAlign: "center" },
-                      ]}
-                    >
-                      Criterios / Instrumento
-                    </Text>
-                    <Text
-                      style={[
-                        styles.tableCell,
-                        { width: "20%", textAlign: "center" },
-                      ]}
-                    >
-                      Actividades / Logro
-                    </Text>
-                    <Text
-                      style={[
-                        styles.tableCellLast,
-                        { width: "35%", textAlign: "center" },
-                      ]}
-                    >
-                      Mejora Continua
-                    </Text>
+                    <Text style={[styles.tableCell, { width: "25%", textAlign: "center" }]}>Resultado</Text>
+                    <Text style={[styles.tableCell, { width: "20%", textAlign: "center" }]}>Criterios / Instrumento</Text>
+                    <Text style={[styles.tableCell, { width: "20%", textAlign: "center" }]}>Actividades / Logro</Text>
+                    <Text style={[styles.tableCellLast, { width: "35%", textAlign: "center" }]}>Mejora Continua</Text>
                   </View>
                   <View style={styles.tableRowLast}>
-                    <Text
-                      style={[
-                        styles.tableCell,
-                        { width: "25%", textAlign: "left" },
-                      ]}
-                    >
+                    <Text style={[styles.tableCell, { width: "25%", textAlign: "left" }]}>
                       {asig.resultados_tabla || "N/A"}
                     </Text>
-                    <Text
-                      style={[
-                        styles.tableCell,
-                        { width: "20%", textAlign: "left" },
-                      ]}
-                    >
+                    <Text style={[styles.tableCell, { width: "20%", textAlign: "left" }]}>
                       C: {asig.res_criterios || "N/A"}
                       {"\n"}
                       I: {asig.res_instrumento || "N/A"}
                     </Text>
-                    <Text
-                      style={[
-                        styles.tableCell,
-                        { width: "20%", textAlign: "left" },
-                      ]}
-                    >
-                      Act: {asig.resultados_actividades || "N/A"}
+                    <Text style={[styles.tableCell, { width: "20%", textAlign: "left" }]}>
+                      A: {asig.resultados_actividades || "N/A"}
                       {"\n"}
-                      Logro: {asig.resultados_logro || "N/A"}
+                      L: {asig.resultados_logro || "N/A"}
                     </Text>
-                    <Text
-                      style={[
-                        styles.tableCellLast,
-                        { width: "35%", textAlign: "left" },
-                      ]}
-                    >
-                      Acciones: {asig.res_acciones || "N/A"}
+                    <Text style={[styles.tableCellLast, { width: "35%", textAlign: "left" }]}>
+                      Ac: {asig.res_acciones || "N/A"}
                       {"\n"}
-                      Propuestas: {asig.res_propuestas || "N/A"}
+                      Pr: {asig.res_propuestas || "N/A"}
                       {"\n"}
-                      Cumplimiento: {asig.res_cumplimiento || "N/A"}
+                      Cu: {asig.res_cumplimiento || "N/A"}
                     </Text>
                   </View>
                 </View>
+                <Text style={styles.legendText}>
+                  *C (Criterios), I (Instrumento), A (Actividades), L (Logro), Ac (Acciones), Pr (Propuestas), Cu (Cumplimiento).
+                </Text>
               </View>
 
               {/* Tabla B: Habilidades Blandas */}
@@ -467,85 +428,38 @@ export const PlantillaPDF = ({ datos }: { datos: InformeData }) => {
                 </Text>
                 <View style={styles.table}>
                   <View style={[styles.tableRow, styles.tableHeader]}>
-                    <Text
-                      style={[
-                        styles.tableCell,
-                        { width: "25%", textAlign: "center" },
-                      ]}
-                    >
-                      Habilidades
-                    </Text>
-                    <Text
-                      style={[
-                        styles.tableCell,
-                        { width: "20%", textAlign: "center" },
-                      ]}
-                    >
-                      Criterios / Instrumento
-                    </Text>
-                    <Text
-                      style={[
-                        styles.tableCell,
-                        { width: "20%", textAlign: "center" },
-                      ]}
-                    >
-                      Actividades / Logro
-                    </Text>
-                    <Text
-                      style={[
-                        styles.tableCellLast,
-                        { width: "35%", textAlign: "center" },
-                      ]}
-                    >
-                      Mejora Continua
-                    </Text>
+                    <Text style={[styles.tableCell, { width: "25%", textAlign: "center" }]}>Habilidades</Text>
+                    <Text style={[styles.tableCell, { width: "20%", textAlign: "center" }]}>Criterios / Instrumento</Text>
+                    <Text style={[styles.tableCell, { width: "20%", textAlign: "center" }]}>Actividades / Logro</Text>
+                    <Text style={[styles.tableCellLast, { width: "35%", textAlign: "center" }]}>Mejora Continua</Text>
                   </View>
                   <View style={styles.tableRowLast}>
-                    <Text
-                      style={[
-                        styles.tableCell,
-                        { width: "25%", textAlign: "left" },
-                      ]}
-                    >
+                    <Text style={[styles.tableCell, { width: "25%", textAlign: "left" }]}>
                       {asig.habilidades_tabla?.join(", ") || "N/A"}
-                      {asig.habilidades_tabla?.includes("Otros")
-                        ? ` (${asig.habilidades_otros})`
-                        : ""}
+                      {asig.habilidades_tabla?.includes("Otros") ? ` (${asig.habilidades_otros})` : ""}
                     </Text>
-                    <Text
-                      style={[
-                        styles.tableCell,
-                        { width: "20%", textAlign: "left" },
-                      ]}
-                    >
+                    <Text style={[styles.tableCell, { width: "20%", textAlign: "left" }]}>
                       C: {asig.hab_criterios || "N/A"}
                       {"\n"}
                       I: {asig.hab_instrumento || "N/A"}
                     </Text>
-                    <Text
-                      style={[
-                        styles.tableCell,
-                        { width: "20%", textAlign: "left" },
-                      ]}
-                    >
-                      Act: {asig.habilidades_actividades || "N/A"}
+                    <Text style={[styles.tableCell, { width: "20%", textAlign: "left" }]}>
+                      A: {asig.habilidades_actividades || "N/A"}
                       {"\n"}
-                      Logro: {asig.habilidades_logro || "N/A"}
+                      L: {asig.habilidades_logro || "N/A"}
                     </Text>
-                    <Text
-                      style={[
-                        styles.tableCellLast,
-                        { width: "35%", textAlign: "left" },
-                      ]}
-                    >
-                      Acciones: {asig.hab_acciones || "N/A"}
+                    <Text style={[styles.tableCellLast, { width: "35%", textAlign: "left" }]}>
+                      Ac: {asig.hab_acciones || "N/A"}
                       {"\n"}
-                      Propuestas: {asig.hab_propuestas || "N/A"}
+                      Pr: {asig.hab_propuestas || "N/A"}
                       {"\n"}
-                      Cumplimiento: {asig.hab_cumplimiento || "N/A"}
+                      Cu: {asig.hab_cumplimiento || "N/A"}
                     </Text>
                   </View>
                 </View>
+                <Text style={styles.legendText}>
+                  *C (Criterios), I (Instrumento), A (Actividades), L (Logro), Ac (Acciones), Pr (Propuestas), Cu (Cumplimiento).
+                </Text>
               </View>
 
               {/* Tabla C: Herramientas TAC */}
@@ -553,69 +467,33 @@ export const PlantillaPDF = ({ datos }: { datos: InformeData }) => {
                 <Text style={styles.evalSubTitle}>c) Herramientas TAC</Text>
                 <View style={styles.table}>
                   <View style={[styles.tableRow, styles.tableHeader]}>
-                    <Text
-                      style={[
-                        styles.tableCell,
-                        { width: "25%", textAlign: "center" },
-                      ]}
-                    >
-                      Herramienta / Tipo
-                    </Text>
-                    <Text
-                      style={[
-                        styles.tableCell,
-                        { width: "40%", textAlign: "center" },
-                      ]}
-                    >
-                      Actividades / Logro
-                    </Text>
-                    <Text
-                      style={[
-                        styles.tableCellLast,
-                        { width: "35%", textAlign: "center" },
-                      ]}
-                    >
-                      Mejora Continua
-                    </Text>
+                    <Text style={[styles.tableCell, { width: "25%", textAlign: "center" }]}>Herramienta / Tipo</Text>
+                    <Text style={[styles.tableCell, { width: "40%", textAlign: "center" }]}>Actividades / Logro</Text>
+                    <Text style={[styles.tableCellLast, { width: "35%", textAlign: "center" }]}>Mejora Continua</Text>
                   </View>
                   <View style={styles.tableRowLast}>
-                    <Text
-                      style={[
-                        styles.tableCell,
-                        { width: "25%", textAlign: "left" },
-                      ]}
-                    >
+                    <Text style={[styles.tableCell, { width: "25%", textAlign: "left" }]}>
                       H: {asig.tac_herramienta || "N/A"}
                       {"\n"}
-                      T: {asig.tac_tabla?.join(", ") || "N/A"}{" "}
-                      {asig.tac_tabla?.includes("Otros")
-                        ? `(${asig.tac_otros})`
-                        : ""}
+                      T: {asig.tac_tabla?.join(", ") || "N/A"} {asig.tac_tabla?.includes("Otros") ? `(${asig.tac_otros})` : ""}
                     </Text>
-                    <Text
-                      style={[
-                        styles.tableCell,
-                        { width: "40%", textAlign: "left" },
-                      ]}
-                    >
-                      Act: {asig.tac_actividades || "N/A"}
+                    <Text style={[styles.tableCell, { width: "40%", textAlign: "left" }]}>
+                      A: {asig.tac_actividades || "N/A"}
                       {"\n"}
-                      Logro: {asig.tac_logro || "N/A"}
+                      L: {asig.tac_logro || "N/A"}
                     </Text>
-                    <Text
-                      style={[
-                        styles.tableCellLast,
-                        { width: "35%", textAlign: "left" },
-                      ]}
-                    >
-                      Acciones: {asig.tac_acciones || "N/A"}
+                    <Text style={[styles.tableCellLast, { width: "35%", textAlign: "left" }]}>
+                      Ac: {asig.tac_acciones || "N/A"}
                       {"\n"}
-                      Propuestas: {asig.tac_propuestas || "N/A"}
+                      Pr: {asig.tac_propuestas || "N/A"}
                       {"\n"}
-                      Cumplimiento: {asig.tac_cumplimiento || "N/A"}
+                      Cu: {asig.tac_cumplimiento || "N/A"}
                     </Text>
                   </View>
                 </View>
+                <Text style={styles.legendText}>
+                  *H (Herramienta), T (Tipo), A (Actividades), L (Logro), Ac (Acciones), Pr (Propuestas), Cu (Cumplimiento).
+                </Text>
               </View>
 
               {asig.tiene_pae && (
@@ -627,8 +505,7 @@ export const PlantillaPDF = ({ datos }: { datos: InformeData }) => {
                     marginTop: 6,
                   }}
                 >
-                  * Esta materia incluye horas de Prácticas de Aplicación y
-                  Experimentación (PAE).
+                  * Esta materia incluye horas de Prácticas de Aplicación y Experimentación (PAE).
                 </Text>
               )}
             </View>
@@ -707,6 +584,9 @@ export const PlantillaPDF = ({ datos }: { datos: InformeData }) => {
             </View>
           )}
         </View>
+        {(!datos?.titulaciones_asignadas || datos.titulaciones_asignadas.length === 0) && (
+          <Text style={styles.legendText}>* N/A: No Aplica</Text>
+        )}
 
         <Text style={styles.subSectionTitle}>
           Trabajos de titulación (lector)
@@ -769,6 +649,9 @@ export const PlantillaPDF = ({ datos }: { datos: InformeData }) => {
             </View>
           )}
         </View>
+        {(!datos?.titulaciones_lector || datos.titulaciones_lector.length === 0) && (
+          <Text style={styles.legendText}>* N/A: No Aplica</Text>
+        )}
 
         {/* 4. PRÁCTICAS */}
         <Text style={styles.sectionTitle}>
@@ -831,6 +714,9 @@ export const PlantillaPDF = ({ datos }: { datos: InformeData }) => {
             </View>
           )}
         </View>
+        {(!datos?.practicas || datos.practicas.length === 0) && (
+          <Text style={styles.legendText}>* N/A: No Aplica</Text>
+        )}
 
         {/* 5. VINCULACIÓN */}
         <Text style={styles.sectionTitle}>5. Vinculación con la Sociedad</Text>
@@ -877,6 +763,9 @@ export const PlantillaPDF = ({ datos }: { datos: InformeData }) => {
             </View>
           )}
         </View>
+        {!datos?.vinc_nombre && (
+          <Text style={styles.legendText}>* N/A: No Aplica</Text>
+        )}
 
         {/* 6. INVESTIGACIÓN Y PUBLICACIONES */}
         <Text style={styles.sectionTitle}>
@@ -940,6 +829,9 @@ export const PlantillaPDF = ({ datos }: { datos: InformeData }) => {
             </View>
           )}
         </View>
+        {(!datos?.proyectos_investigacion || datos.proyectos_investigacion.length === 0) && (
+          <Text style={styles.legendText}>* N/A: No Aplica</Text>
+        )}
 
         <Text style={styles.subSectionTitle}>
           Publicaciones y Ponencias Acreditadas
@@ -1003,6 +895,9 @@ export const PlantillaPDF = ({ datos }: { datos: InformeData }) => {
             </View>
           )}
         </View>
+        {(!datos?.publicaciones || datos.publicaciones.length === 0) && (
+          <Text style={styles.legendText}>* N/A: No Aplica</Text>
+        )}
 
         {/* 7. DESIGNACIONES Y CIERRE */}
         <Text style={styles.sectionTitle}>7. Designaciones y Cierre</Text>
@@ -1028,7 +923,7 @@ export const PlantillaPDF = ({ datos }: { datos: InformeData }) => {
         <Text
           style={styles.footer}
           render={({ pageNumber, totalPages }) =>
-            `${datos?.docente_nombre || ""}                                                                         Página ${pageNumber} | ${totalPages}`
+            `${datos?.docente_nombre || ""}                                                                                        Página ${pageNumber} | ${totalPages}`
           }
           fixed
         />
