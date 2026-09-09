@@ -38,20 +38,19 @@ export class InformesController {
   }
 
   private obtenerRutaEscritorio(): string {
-
-    // 👇 CAMBIO AQUÍ: Usamos una ruta externa al código fuente para evitar reinicios
-    const rutaContenedorDocker = '/archivos_docentes';
-    
-    if (fs.existsSync('/usr/src/app') || process.env.NODE_ENV === 'production') {
-      return rutaContenedorDocker;
+    // 1. MÁXIMA PRIORIDAD: Si Docker nos pasa la ruta, la usamos a ojos cerrados
+    if (process.env.UPLOAD_DIR) {
+      return process.env.UPLOAD_DIR;
     }
-    
+
+    // 2. Fallback para cuando desarrolles en local fuera de Docker (ej. npm run start:dev)
     const homedir = os.homedir();
     const escritorioEs = path.join(homedir, 'Escritorio');
     const escritorioEn = path.join(homedir, 'Desktop');
 
     if (fs.existsSync(escritorioEs)) return escritorioEs;
     if (fs.existsSync(escritorioEn)) return escritorioEn;
+    
     return escritorioEn;
   }
 
@@ -130,7 +129,7 @@ export class InformesController {
     // Valores por defecto si es la primera vez que se ejecuta el sistema
     return {
       pesoMaximoMB: 2,
-      logo_facultad: null, // 👈 NUEVO
+      logo_facultad: null,
       logo_carrera: null,
       reglas: {
         general_ficha: '01_{PERIODO}_FICHA_{DOCENTE}',
@@ -214,7 +213,6 @@ export class InformesController {
       }
       // 2. Archivos que van a la carpeta ASIGNATURAS
       else if (file.fieldname.startsWith('archivo_asignatura_')) {
-        // Formato del fieldname enviado por front: archivo_asignatura_[CODIGO]_[INDEX]_[TIPO]
         const partes = file.fieldname.split('_');
         const indexAsig = parseInt(partes[3], 10);
 

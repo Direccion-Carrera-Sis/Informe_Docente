@@ -246,7 +246,7 @@ export default function NuevoInformePage() {
     cargarConfigYUsuario();
   }, []);
 
-  const procesarPlantilla = (plantilla: string, datos: any) => {
+const procesarPlantilla = (plantilla: string, datos: any) => {
     let pSaneado = (datos.periodo || "26-26").replace(/\//g, "-");
     if (pSaneado.length === 9) pSaneado = `${pSaneado.substring(2,4)}-${pSaneado.substring(7,9)}`; 
 
@@ -260,10 +260,11 @@ export default function NuevoInformePage() {
       .replace("{COD_MATERIA}", datos.codMateria || 'SinCodigo')
       .replace("{NOM_MATERIA}", matSaneada);
 
-    const sufijoEjemplo = stringFinal.endsWith('_') || stringFinal.endsWith('E') ? '1.pdf' : '.pdf';
+    const sufijoEjemplo = stringFinal.endsWith('_') || stringFinal.endsWith('E') ? '1.pdf' : '.pdf'; 
     
     return {
-      regex: new RegExp(`^${stringFinal.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace('\\\\d+', '\\d+')}.*\\.pdf$`, 'i'),
+      // 👇 SOLUCIÓN: Cambiamos '\\\\d+' por '\\\\d\\+' para restaurar correctamente el símbolo más (+)
+      regex: new RegExp(`^${stringFinal.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace('\\\\d\\+', '\\d+')}.*\\.pdf$`, 'i'),
       ejemplo: `${stringFinal.replace('\\d+', 'YYYYMMDD')}${sufijoEjemplo}`
     };
   };
@@ -392,6 +393,7 @@ export default function NuevoInformePage() {
       const master = asignaturas.find((a: any) => a.materia === asig.materia) || asig;
       return {
         ...asig,
+        silabo_evidencia: master.silabo_evidencia,
         resultados_tabla: master.resultados_tabla, res_criterios: master.res_criterios, res_instrumento: master.res_instrumento, resultados_actividades: master.resultados_actividades, resultados_logro: master.resultados_logro, res_acciones: master.res_acciones, res_propuestas: master.res_propuestas, res_cumplimiento: master.res_cumplimiento,
         habilidades_tabla: master.habilidades_tabla, habilidades_otros: master.habilidades_otros, hab_criterios: master.hab_criterios, hab_instrumento: master.hab_instrumento, habilidades_actividades: master.habilidades_actividades, habilidades_logro: master.habilidades_logro, hab_acciones: master.hab_acciones, hab_propuestas: master.hab_propuestas, hab_cumplimiento: master.hab_cumplimiento,
         tac_herramienta: master.tac_herramienta, tac_tabla: master.tac_tabla, tac_otros: master.tac_otros, tac_actividades: master.tac_actividades, tac_logro: master.tac_logro, tac_acciones: master.tac_acciones, tac_propuestas: master.tac_propuestas, tac_cumplimiento: master.tac_cumplimiento,
@@ -609,8 +611,7 @@ export default function NuevoInformePage() {
     } catch (error: any) { alert("Error de red: " + error.message); } finally { setCargando(false); }
   };
 
-  // 👇 LÓGICA DE DESCARGA ESTRICTA (Solo al 100%)
-  const descargarPDF = async () => {
+const descargarPDF = async () => {
     const valoresActuales = getValues();
     valoresActuales.asignaturas = sincronizarAsignaturasAgrupadas(valoresActuales.asignaturas || []);
     
@@ -640,16 +641,36 @@ export default function NuevoInformePage() {
 
     try {
       const blob = await pdf(
-        <PlantillaPDF 
-          datos={valoresActuales} 
-          logos={{ facultad: configSistema.logo_facultad ?? undefined, carrera: configSistema.logo_carrera ?? undefined }} 
+        <PlantillaPDF
+          {...({
+            datos: valoresActuales,
+            logos: {
+              facultad: configSistema.logo_facultad ?? undefined,
+              carrera: configSistema.logo_carrera ?? undefined,
+            },
+          } as any)}
         />
       ).toBlob();
       
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `Informe_${valoresActuales.docente_nombre || "Docente"}.pdf`;
+      
+      // 👇 FORMATEO DEL NOMBRE DEL ARCHIVO
+      const periodoLimpio = (valoresActuales.periodo || "26-26").replace(/\//g, "-");
+      
+      // Convierte "JUAN PÉREZ" a "JuanPerez" (Elimina espacios, tildes y capitaliza)
+      const docenteFormateado = (valoresActuales.docente_nombre || "ApellidoNombre")
+        .toLowerCase()
+        .split(/\s+/)
+        .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join("")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "");
+
+      link.download = `04_${periodoLimpio}_Informe_Docente_${docenteFormateado}.pdf`;
+      // 👆 FIN DEL FORMATEO
+
       link.click();
       URL.revokeObjectURL(url);
     } catch (error) { alert("Hubo un error al crear el documento PDF."); }
@@ -743,14 +764,13 @@ export default function NuevoInformePage() {
 <div style={{ width: "100%", overflowX: "auto", marginBottom: "10px" }}>
   <div style={{ minWidth: "950px" }}>
     
-    <div style={{ display: "grid", gridTemplateColumns: "40px 1.5fr 2fr 90px 70px 70px 70px 70px 70px 50px", gap: "5px", fontSize: "0.85em", textAlign: "center", fontWeight: "bold", alignItems: "center", marginBottom: "10px" }}>
+    <div style={{ display: "grid", gridTemplateColumns: "40px 1.5fr 2fr 100px 70px 70px 70px 70px 70px 50px", gap: "5px", fontSize: "0.85em", textAlign: "center", fontWeight: "bold", alignItems: "center", marginBottom: "10px" }}>
       <div>Nº</div><div>Carrera</div><div>Asignatura / Materia</div><div>Código</div><div>Paralelo</div>
       <div>N° Est. {reqStar}</div><div>% Asist. {reqStar}</div><div>% Aprob. {reqStar}</div><div>% Reprob. {reqStar}</div><div style={{ color: "#0284c7" }}>PAE</div>
     </div>
 
-    {/* 2. Filas: Se cambió el cuarto valor de 70px a 90px */}
     {fields.map((item, index) => (
-      <div key={item.id} style={{ display: "grid", gridTemplateColumns: "40px 1.5fr 2fr 90px 70px 70px 70px 70px 70px 50px", gap: "5px", marginBottom: "8px", alignItems: "center" }}>
+      <div key={item.id} style={{ display: "grid", gridTemplateColumns: "40px 1.5fr 2fr 100px 70px 70px 70px 70px 70px 50px", gap: "5px", marginBottom: "8px", alignItems: "center" }}>
         <div style={{ textAlign: "center", fontWeight: "bold" }}>{index + 1}</div>
         <div><input {...register(`asignaturas.${index}.carrera`)} readOnly type="text" style={{ ...inputStyle, ...readOnlyStyle }} /></div>
         <div><input {...register(`asignaturas.${index}.materia`)} readOnly type="text" style={{ ...inputStyle, ...readOnlyStyle }} /></div>

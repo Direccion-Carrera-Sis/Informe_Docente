@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-nocheck
 import { Document, Page, Text, View, StyleSheet, Image } from "@react-pdf/renderer";
@@ -40,6 +41,22 @@ export interface AsignaturaDataPDF {
   tac_acciones?: string;
   tac_propuestas?: string;
   tac_cumplimiento?: string;
+
+  // Archivos de la asignatura
+  silabo_evidencia?: any[];
+  seguimiento_evidencia?: any[];
+  asistencia_evidencia?: any[];
+  notas_evidencia?: any[];
+  indiv_evidencia?: any[];
+  grupales_evidencia?: any[];
+  pae_evidencia?: any[];
+  refuerzo_evidencia?: any[];
+  sumativa1_evidencia?: any[];
+  sumativa_final_evidencia?: any[];
+  recuperacion_evidencia?: any[];
+  res_evidencia?: any[];
+  hab_evidencia?: any[];
+  tac_evidencia?: any[];
 }
 
 export interface TitulacionDataPDF {
@@ -84,7 +101,13 @@ export interface InformeData {
   designaciones?: string;
   fecha_elaboracion?: string;
   firma_docente?: string;
-  archivos_adjuntos?: string[]; // 👈 NUEVO: Lista de nombres de archivos
+  
+  // Archivos generales
+  general_ficha?: any[];
+  general_horario?: any[];
+  general_cap_tac?: any[];
+  general_cap_metodologica?: any[];
+  general_cap_profesional?: any[];
 }
 
 const styles = StyleSheet.create({
@@ -116,9 +139,13 @@ const styles = StyleSheet.create({
   signatureLine: { width: 250, borderBottomWidth: 1, borderBottomColor: "#000", marginBottom: 5 },
   signatureText: { fontSize: 10, fontWeight: "bold" },
   footer: { position: "absolute", bottom: 30, left: 50, right: 50, fontSize: 8, flexDirection: "row", justifyContent: "space-between", color: "#555" },
+  
+  // Estilos para la lista de archivos
+  filesContainer: { marginTop: 6, backgroundColor: "#f8fafc", padding: 6, borderRadius: 4, borderLeftWidth: 2, borderLeftColor: "#0284c7" },
+  fileGroupTitle: { fontSize: 9, fontWeight: "bold", marginBottom: 4, color: "#0f172a" },
+  fileText: { fontSize: 8, color: "#0284c7", marginBottom: 2, marginLeft: 5 }
 });
 
-// 👉 Recibimos los logos como propiedad
 export const PlantillaPDF = ({ datos, logos }: { datos: InformeData, logos?: { facultad?: string, carrera?: string } }) => {
   const renderBullets = (texto?: string) => {
     if (!texto) return <Text style={styles.bodyText}>N/A</Text>;
@@ -127,11 +154,63 @@ export const PlantillaPDF = ({ datos, logos }: { datos: InformeData, logos?: { f
     );
   };
 
+  // Renderiza los archivos evitando duplicados (por nombre)
+  const renderArchivos = (files: any[]) => {
+    if (!files || !Array.isArray(files) || files.length === 0) return null;
+    const uniqueFiles: string[] = [];
+    const seen = new Set();
+    files.forEach(f => {
+      const name = f.name || f;
+      if (!seen.has(name)) {
+        seen.add(name);
+        uniqueFiles.push(name);
+      }
+    });
+    return uniqueFiles.map((name, i) => (
+      <Text key={name + i} style={styles.fileText}>📎 {name}</Text>
+    ));
+  };
+
+  // 1. Agrupar asignaturas por materia para unificar tablas y archivos
+  const materiasAgrupadas: any[] = [];
+  if (datos?.asignaturas) {
+    datos.asignaturas.forEach((asig) => {
+      const existente = materiasAgrupadas.find(m => m.materia === asig.materia);
+      if (existente) {
+        existente.paralelos.push(asig.paralelo || "N/A");
+        existente.estudiantes.push(asig.estudiantes || "0");
+        existente.asistencia.push(asig.asistencia || "0");
+        existente.aprobados.push(asig.aprobados || "0");
+        existente.reprobados.push(asig.reprobados || "0");
+        
+        const keysArchivos = ['seguimiento_evidencia', 'asistencia_evidencia', 'notas_evidencia', 'indiv_evidencia', 'grupales_evidencia', 'pae_evidencia', 'refuerzo_evidencia', 'sumativa1_evidencia', 'sumativa_final_evidencia', 'recuperacion_evidencia', 'res_evidencia', 'hab_evidencia', 'tac_evidencia'];
+        keysArchivos.forEach(key => {
+          if (asig[key]) existente.archivos_paralelos.push(...asig[key]);
+        });
+      } else {
+        const nueva = {
+          ...asig,
+          paralelos: [asig.paralelo || "N/A"],
+          estudiantes: [asig.estudiantes || "0"],
+          asistencia: [asig.asistencia || "0"],
+          aprobados: [asig.aprobados || "0"],
+          reprobados: [asig.reprobados || "0"],
+          archivos_paralelos: []
+        };
+        const keysArchivos = ['seguimiento_evidencia', 'asistencia_evidencia', 'notas_evidencia', 'indiv_evidencia', 'grupales_evidencia', 'pae_evidencia', 'refuerzo_evidencia', 'sumativa1_evidencia', 'sumativa_final_evidencia', 'recuperacion_evidencia', 'res_evidencia', 'hab_evidencia', 'tac_evidencia'];
+        keysArchivos.forEach(key => {
+          if (asig[key]) nueva.archivos_paralelos.push(...asig[key]);
+        });
+        materiasAgrupadas.push(nueva);
+      }
+    });
+  }
+
   return (
     <Document>
       <Page size="A4" style={styles.page}>
         
-        {/* ENCABEZADO OFICIAL CON LOGOS CONDICIONALES */}
+        {/* ENCABEZADO OFICIAL */}
         <View style={styles.headerContainer} fixed>
           <View style={styles.logoBox}>
             {logos?.facultad && <Image src={logos.facultad} style={styles.logoImage} />}
@@ -156,26 +235,28 @@ export const PlantillaPDF = ({ datos, logos }: { datos: InformeData, logos?: { f
         <View style={styles.table}>
           <View style={[styles.tableRow, styles.tableHeader]}>
             <Text style={[styles.tableCell, { width: "5%", textAlign: "center" }]}>No.</Text>
-            <Text style={[styles.tableCell, { width: "20%" }]}>Carrera</Text>
-            <Text style={[styles.tableCell, { width: "35%" }]}>Materia</Text>
+            <Text style={[styles.tableCell, { width: "15%" }]}>Carrera</Text>
+            <Text style={[styles.tableCell, { width: "25%" }]}>Materia</Text>
+            <Text style={[styles.tableCell, { width: "15%", textAlign: "center" }]}>Paralelos</Text>
             <Text style={[styles.tableCell, { width: "10%", textAlign: "center" }]}>N° Est.</Text>
             <Text style={[styles.tableCell, { width: "10%", textAlign: "center" }]}>% Asist.</Text>
             <Text style={[styles.tableCell, { width: "10%", textAlign: "center" }]}>% Aprob.</Text>
             <Text style={[styles.tableCellLast, { width: "10%", textAlign: "center" }]}>% Reprob.</Text>
           </View>
 
-          {datos?.asignaturas && datos.asignaturas.length > 0 ? (
-            datos.asignaturas.map((asig, index) => {
-              const isLast = index === datos.asignaturas.length - 1;
+          {materiasAgrupadas.length > 0 ? (
+            materiasAgrupadas.map((asig, index) => {
+              const isLast = index === materiasAgrupadas.length - 1;
               return (
-                <View style={isLast ? styles.tableRowLast : styles.tableRow} key={index}>
+                <View style={isLast ? styles.tableRowLast : styles.tableRow} key={index} wrap={false}>
                   <Text style={[styles.tableCell, { width: "5%", textAlign: "center" }]}>{index + 1}</Text>
-                  <Text style={[styles.tableCell, { width: "20%" }]}>{asig.carrera || "Sistemas de Información"}</Text>
-                  <Text style={[styles.tableCell, { width: "35%" }]}>{asig.materia} {asig.codigo ? `- ${asig.codigo}` : ""}</Text>
-                  <Text style={[styles.tableCell, { width: "10%", textAlign: "center" }]}>{asig.estudiantes || "0"}</Text>
-                  <Text style={[styles.tableCell, { width: "10%", textAlign: "center" }]}>{asig.asistencia || "0"}</Text>
-                  <Text style={[styles.tableCell, { width: "10%", textAlign: "center" }]}>{asig.aprobados || "0"}</Text>
-                  <Text style={[styles.tableCellLast, { width: "10%", textAlign: "center" }]}>{asig.reprobados || "0"}</Text>
+                  <Text style={[styles.tableCell, { width: "15%" }]}>{asig.carrera || "Sistemas de Información"}</Text>
+                  <Text style={[styles.tableCell, { width: "25%" }]}>{asig.materia} {asig.codigo ? `- ${asig.codigo}` : ""}</Text>
+                  <Text style={[styles.tableCell, { width: "15%", textAlign: "center" }]}>{asig.paralelos.join("\n")}</Text>
+                  <Text style={[styles.tableCell, { width: "10%", textAlign: "center" }]}>{asig.estudiantes.join("\n")}</Text>
+                  <Text style={[styles.tableCell, { width: "10%", textAlign: "center" }]}>{asig.asistencia.join("\n")}</Text>
+                  <Text style={[styles.tableCell, { width: "10%", textAlign: "center" }]}>{asig.aprobados.join("\n")}</Text>
+                  <Text style={[styles.tableCellLast, { width: "10%", textAlign: "center" }]}>{asig.reprobados.join("\n")}</Text>
                 </View>
               );
             })
@@ -183,14 +264,24 @@ export const PlantillaPDF = ({ datos, logos }: { datos: InformeData, logos?: { f
             <View style={styles.tableRowLast}><Text style={[styles.tableCellLast, { width: "100%", textAlign: "center" }]}>N/A</Text></View>
           )}
         </View>
-        {(!datos?.asignaturas || datos.asignaturas.length === 0) && <Text style={styles.legendText}>* N/A: No Aplica</Text>}
+
+        {/* EVIDENCIAS GENERALES DE LA SECCIÓN 1 */}
+        <View style={styles.filesContainer} wrap={false}>
+          <Text style={styles.fileGroupTitle}>Evidencias Generales Cargadas:</Text>
+          {renderArchivos(datos?.general_ficha)}
+          {renderArchivos(datos?.general_horario)}
+          {renderArchivos(datos?.general_cap_tac)}
+          {renderArchivos(datos?.general_cap_metodologica)}
+          {renderArchivos(datos?.general_cap_profesional)}
+          {!(datos?.general_ficha?.length || datos?.general_horario?.length) && <Text style={{fontSize: 8, color: '#64748b'}}>Sin evidencias generales.</Text>}
+        </View>
 
         {/* 2. EVALUACIÓN ESPECÍFICA */}
         <Text style={styles.sectionTitle}>2. Evaluación Específica por Asignatura</Text>
-        {datos?.asignaturas && datos.asignaturas.length > 0 ? (
-          datos.asignaturas.map((asig, index) => (
+        {materiasAgrupadas.length > 0 ? (
+          materiasAgrupadas.map((asig, index) => (
             <View key={`eval-${index}`} style={styles.evalContainer}>
-              <Text style={styles.evalTitle}>2.{index + 1}. Asignatura: {asig.materia || "Sin nombre"} (Paralelo: {asig.paralelo || "N/A"})</Text>
+              <Text style={styles.evalTitle}>2.{index + 1}. Asignatura: {asig.materia || "Sin nombre"} (Paralelos: {asig.paralelos.join(", ")})</Text>
 
               {/* Tabla A */}
               <View wrap={false}>
@@ -209,7 +300,6 @@ export const PlantillaPDF = ({ datos, logos }: { datos: InformeData, logos?: { f
                     <Text style={[styles.tableCellLast, { width: "35%", textAlign: "left" }]}>Ac: {asig.res_acciones || "N/A"}{"\n"}Pr: {asig.res_propuestas || "N/A"}{"\n"}Cu: {asig.res_cumplimiento || "N/A"}</Text>
                   </View>
                 </View>
-                <Text style={styles.legendText}>*C (Criterios), I (Instrumento), A (Actividades), L (Logro), Ac (Acciones), Pr (Propuestas), Cu (Cumplimiento).</Text>
               </View>
 
               {/* Tabla B */}
@@ -229,7 +319,6 @@ export const PlantillaPDF = ({ datos, logos }: { datos: InformeData, logos?: { f
                     <Text style={[styles.tableCellLast, { width: "35%", textAlign: "left" }]}>Ac: {asig.hab_acciones || "N/A"}{"\n"}Pr: {asig.hab_propuestas || "N/A"}{"\n"}Cu: {asig.hab_cumplimiento || "N/A"}</Text>
                   </View>
                 </View>
-                <Text style={styles.legendText}>*C (Criterios), I (Instrumento), A (Actividades), L (Logro), Ac (Acciones), Pr (Propuestas), Cu (Cumplimiento).</Text>
               </View>
 
               {/* Tabla C */}
@@ -247,7 +336,14 @@ export const PlantillaPDF = ({ datos, logos }: { datos: InformeData, logos?: { f
                     <Text style={[styles.tableCellLast, { width: "35%", textAlign: "left" }]}>Ac: {asig.tac_acciones || "N/A"}{"\n"}Pr: {asig.tac_propuestas || "N/A"}{"\n"}Cu: {asig.tac_cumplimiento || "N/A"}</Text>
                   </View>
                 </View>
-                <Text style={styles.legendText}>*H (Herramienta), T (Tipo), A (Actividades), L (Logro), Ac (Acciones), Pr (Propuestas), Cu (Cumplimiento).</Text>
+              </View>
+
+              {/* EVIDENCIAS DE LA ASIGNATURA */}
+              <View style={styles.filesContainer} wrap={false}>
+                <Text style={styles.fileGroupTitle}>Evidencias de la Asignatura y sus Paralelos:</Text>
+                {renderArchivos(asig.silabo_evidencia)}
+                {renderArchivos(asig.archivos_paralelos)}
+                {!(asig.silabo_evidencia?.length || asig.archivos_paralelos?.length) && <Text style={{fontSize: 8, color: '#64748b'}}>Sin evidencias adjuntas.</Text>}
               </View>
 
               {asig.tiene_pae && <Text style={{ fontSize: 9, color: "#be185d", fontWeight: "bold", marginTop: 6 }}>* Esta materia incluye horas de Prácticas de Aplicación y Experimentación (PAE).</Text>}
@@ -283,7 +379,6 @@ export const PlantillaPDF = ({ datos, logos }: { datos: InformeData, logos?: { f
             })
           ) : <View style={styles.tableRowLast}><Text style={[styles.tableCellLast, { width: "100%", textAlign: "center" }]}>N/A</Text></View>}
         </View>
-        {(!datos?.titulaciones_asignadas || datos.titulaciones_asignadas.length === 0) && <Text style={styles.legendText}>* N/A: No Aplica</Text>}
 
         <Text style={styles.subSectionTitle}>Trabajos de titulación (lector)</Text>
         <View style={styles.table}>
@@ -307,7 +402,6 @@ export const PlantillaPDF = ({ datos, logos }: { datos: InformeData, logos?: { f
             })
           ) : <View style={styles.tableRowLast}><Text style={[styles.tableCellLast, { width: "100%", textAlign: "center" }]}>N/A</Text></View>}
         </View>
-        {(!datos?.titulaciones_lector || datos.titulaciones_lector.length === 0) && <Text style={styles.legendText}>* N/A: No Aplica</Text>}
 
         {/* 4. PRÁCTICAS */}
         <Text style={styles.sectionTitle}>4. Prácticas Preprofesionales (Tutor)</Text>
@@ -332,7 +426,6 @@ export const PlantillaPDF = ({ datos, logos }: { datos: InformeData, logos?: { f
             })
           ) : <View style={styles.tableRowLast}><Text style={[styles.tableCellLast, { width: "100%", textAlign: "center" }]}>N/A</Text></View>}
         </View>
-        {(!datos?.practicas || datos.practicas.length === 0) && <Text style={styles.legendText}>* N/A: No Aplica</Text>}
 
         {/* 5. VINCULACIÓN */}
         <Text style={styles.sectionTitle}>5. Vinculación con la Sociedad</Text>
@@ -352,7 +445,6 @@ export const PlantillaPDF = ({ datos, logos }: { datos: InformeData, logos?: { f
             </View>
           ) : <View style={styles.tableRowLast}><Text style={[styles.tableCellLast, { width: "100%", textAlign: "center" }]}>N/A</Text></View>}
         </View>
-        {!datos?.vinc_nombre && <Text style={styles.legendText}>* N/A: No Aplica</Text>}
 
         {/* 6. INVESTIGACIÓN Y PUBLICACIONES */}
         <Text style={styles.sectionTitle}>6. Investigación y Publicaciones</Text>
@@ -378,7 +470,6 @@ export const PlantillaPDF = ({ datos, logos }: { datos: InformeData, logos?: { f
             })
           ) : <View style={styles.tableRowLast}><Text style={[styles.tableCellLast, { width: "100%", textAlign: "center" }]}>N/A</Text></View>}
         </View>
-        {(!datos?.proyectos_investigacion || datos.proyectos_investigacion.length === 0) && <Text style={styles.legendText}>* N/A: No Aplica</Text>}
 
         <Text style={styles.subSectionTitle}>Publicaciones y Ponencias Acreditadas</Text>
         <View style={styles.table}>
@@ -404,24 +495,11 @@ export const PlantillaPDF = ({ datos, logos }: { datos: InformeData, logos?: { f
             })
           ) : <View style={styles.tableRowLast}><Text style={[styles.tableCellLast, { width: "100%", textAlign: "center" }]}>N/A</Text></View>}
         </View>
-        {(!datos?.publicaciones || datos.publicaciones.length === 0) && <Text style={styles.legendText}>* N/A: No Aplica</Text>}
 
         {/* 7. DESIGNACIONES Y CIERRE */}
         <Text style={styles.sectionTitle}>7. Designaciones y Cierre</Text>
         <Text style={styles.bodyText}>Otras designaciones, comisiones o actividades administrativas:</Text>
         <View style={{ marginTop: 5 }}>{renderBullets(datos?.designaciones)}</View>
-
-        {/* 👇 NUEVA SECCIÓN 8: LISTADO DE EVIDENCIAS CARGADAS */}
-        <Text style={styles.sectionTitle} break>8. Listado de Evidencias Digitales Cargadas</Text>
-        <View style={{ marginTop: 5 }}>
-          {datos?.archivos_adjuntos && datos.archivos_adjuntos.length > 0 ? (
-            datos.archivos_adjuntos.map((nombre, idx) => (
-              <Text key={idx} style={styles.bodyText}>• {nombre}</Text>
-            ))
-          ) : (
-            <Text style={styles.bodyText}>No se adjuntaron evidencias digitales.</Text>
-          )}
-        </View>
 
         {/* FIRMAS */}
         <View style={styles.signatureContainer} wrap={false}>
@@ -431,7 +509,7 @@ export const PlantillaPDF = ({ datos, logos }: { datos: InformeData, logos?: { f
         </View>
 
         {/* PIE DE PÁGINA */}
-        <Text style={styles.footer} render={({ pageNumber, totalPages }) => `${datos?.docente_nombre || ""}                                                                                                     Página ${pageNumber} | ${totalPages}`} fixed />
+        <Text style={styles.footer} render={({ pageNumber, totalPages }) => `${datos?.docente_nombre || ""}                                                                                                                                              Página ${pageNumber} | ${totalPages}`} fixed />
       </Page>
     </Document>
   );

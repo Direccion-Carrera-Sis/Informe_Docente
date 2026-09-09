@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # ==========================================
   # ENTORNO QA (Pruebas)
@@ -30,6 +28,7 @@ services:
       - ADMIN_CLAVE=admin123
       - ADMIN_CEDULA=0000000000
       - PERIODO_ACTUAL=2026-2026
+      - UPLOAD_DIR=/archivos_docentes # 👈 Nueva variable para forzar la ruta
     depends_on:
       - mongodb_qa
 
@@ -49,6 +48,7 @@ services:
       - NEXT_PUBLIC_API_URL=http://localhost/qa/api
     depends_on:
       - api_qa
+      
   # ==========================================
   # ENTORNO PRODUCCIÓN (Real)
   # ==========================================
@@ -78,6 +78,7 @@ services:
       - ADMIN_CLAVE=admin123
       - ADMIN_CEDULA=0000000000
       - PERIODO_ACTUAL=2026-2026
+      - UPLOAD_DIR=/archivos_docentes # 👈 Nueva variable para forzar la ruta
     depends_on:
       - mongodb_prod
 
