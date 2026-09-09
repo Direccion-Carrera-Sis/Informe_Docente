@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   # ==========================================
   # ENTORNO QA (Pruebas)
@@ -7,7 +9,7 @@ services:
     container_name: informes_mongodb_qa
     restart: always
     ports:
-      - "8085:27017" # Puerto externo exclusivo para QA
+      - "8085:27017"
     volumes:
       - datos_informes_uce_qa:/data/db
 
@@ -18,9 +20,9 @@ services:
     container_name: informes_api_qa
     restart: always
     ports:
-      - "8082:4000" # Puerto exclusivo para QA
+      - "8082:4000"
     volumes:
-      - C:\Users\Lenovo LOQ\Desktop\Docentes_QA:/archivos_docentes # Carpeta de Escritorio aislada
+      - C:\Users\SOPORTEFICA\Desktop\Docentes_QA:/archivos_docentes # Ruta corregida
     environment:
       - MONGODB_URI=mongodb://mongodb_qa:27017/sistema-informes-qa
       - FRONTEND_URL=http://10.1.1.1
@@ -28,7 +30,7 @@ services:
       - ADMIN_CLAVE=admin123
       - ADMIN_CEDULA=0000000000
       - PERIODO_ACTUAL=2026-2026
-      - UPLOAD_DIR=/archivos_docentes # 👈 Nueva variable para forzar la ruta
+      - UPLOAD_DIR=/archivos_docentes
     depends_on:
       - mongodb_qa
 
@@ -38,14 +40,14 @@ services:
       dockerfile: apps/web/Dockerfile
       args:
         - NEXT_PUBLIC_BASE_PATH=/qa
-        - NEXT_PUBLIC_API_URL=http://10.3.3.114/qa/api
+        - NEXT_PUBLIC_API_URL=http://10.3.20.122/qa/api # IP corregida
     container_name: informes_web_qa
     restart: always
     ports:
       - "8081:3000"
     environment:
       - NEXT_PUBLIC_BASE_PATH=/qa
-      - NEXT_PUBLIC_API_URL=http://10.3.3.114/qa/api
+      - NEXT_PUBLIC_API_URL=http://10.3.20.122/qa/api # IP corregida
     depends_on:
       - api_qa
       
@@ -57,7 +59,7 @@ services:
     container_name: informes_mongodb_prod
     restart: always
     ports:
-      - "8086:27017" # Puerto externo exclusivo para Producción
+      - "8086:27017"
     volumes:
       - datos_informes_uce_prod:/data/db
 
@@ -68,9 +70,9 @@ services:
     container_name: informes_api_prod
     restart: always
     ports:
-      - "8084:4000" # Puerto exclusivo para Producción
+      - "8084:4000"
     volumes:
-      - C:\Users\Lenovo LOQ\Desktop\Docentes_PROD:/archivos_docentes # Carpeta de Escritorio aislada
+      - C:\Users\SOPORTEFICA\Desktop\Docentes_PROD:/archivos_docentes # Ruta corregida
     environment:
       - MONGODB_URI=mongodb://mongodb_prod:27017/sistema-informes-prod
       - FRONTEND_URL=http://10.1.1.1
@@ -78,7 +80,7 @@ services:
       - ADMIN_CLAVE=admin123
       - ADMIN_CEDULA=0000000000
       - PERIODO_ACTUAL=2026-2026
-      - UPLOAD_DIR=/archivos_docentes # 👈 Nueva variable para forzar la ruta
+      - UPLOAD_DIR=/archivos_docentes
     depends_on:
       - mongodb_prod
 
@@ -88,14 +90,14 @@ services:
       dockerfile: apps/web/Dockerfile
       args:
         - NEXT_PUBLIC_BASE_PATH=/prod
-        - NEXT_PUBLIC_API_URL=http://10.3.3.114/prod/api
+        - NEXT_PUBLIC_API_URL=http://10.3.20.122/prod/api
     container_name: informes_web_prod
     restart: always
     ports:
       - "8083:3000"
     environment:
       - NEXT_PUBLIC_BASE_PATH=/prod
-      - NEXT_PUBLIC_API_URL=http://10.3.3.114/prod/api
+      - NEXT_PUBLIC_API_URL=http://10.3.20.122/prod/api
     depends_on:
       - api_prod
 
@@ -107,7 +109,7 @@ services:
     container_name: informes_nginx_proxy
     restart: always
     ports:
-      - "80:80" # Único punto de entrada web unificado (IP del servidor)
+      - "80:80" 
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
     extra_hosts:
@@ -116,7 +118,6 @@ services:
       - web_qa
       - web_prod
 
-# Declaración de los volúmenes aislados
 volumes:
   datos_informes_uce_qa:
   datos_informes_uce_prod:
