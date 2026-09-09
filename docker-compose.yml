@@ -1,55 +1,121 @@
 version: '3.8'
 
 services:
-  # 1. BASE DE DATOS MONGODB
-  mongodb:
+  # ==========================================
+  # ENTORNO QA (Pruebas)
+  # ==========================================
+  mongodb_qa:
     image: mongo:latest
-    container_name: informes_mongodb
+    container_name: informes_mongodb_qa
     restart: always
     ports:
-      - "27017:27017"
+      - "8085:27017" # Puerto externo exclusivo para QA
     volumes:
-      - datos_informes_uce:/data/db # Volumen persistente para no perder datos
+      - datos_informes_uce_qa:/data/db
 
-  # 2. BACKEND (NestJS)
-  api:
+  api_qa:
     build:
-      context: . # Construye desde la raíz del monorepo
+      context: .
       dockerfile: apps/api/Dockerfile
-    container_name: informes_api
+    container_name: informes_api_qa
     restart: always
     ports:
-      - "4000:4000"
+      - "8082:4000" # Puerto exclusivo para QA
+    volumes:
+      - C:\Users\Lenovo LOQ\Desktop\Docentes_QA:/archivos_docentes # Carpeta de Escritorio aislada
     environment:
-      # Conexión interna directa al contenedor de MongoDB
-      - MONGODB_URI=mongodb://mongodb:27017/sistema-informes-uce
-      # URL permitida para evitar bloqueos de CORS
-      - FRONTEND_URL=http://localhost:3000
-      # Credenciales del administrador inicial
+      - MONGODB_URI=mongodb://mongodb_qa:27017/sistema-informes-qa
+      - FRONTEND_URL=http://10.1.1.1
+      - ADMIN_CORREO=admin.qa@uce.edu.ec
+      - ADMIN_CLAVE=admin123
+      - ADMIN_CEDULA=0000000000
+      - PERIODO_ACTUAL=2026-2026
+    depends_on:
+      - mongodb_qa
+
+  web_qa:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      args:
+        - NEXT_PUBLIC_BASE_PATH=/qa
+        - NEXT_PUBLIC_API_URL=http://localhost/qa/api
+    container_name: informes_web_qa
+    restart: always
+    ports:
+      - "8081:3000"
+    environment:
+      - NEXT_PUBLIC_BASE_PATH=/qa
+      - NEXT_PUBLIC_API_URL=http://localhost/qa/api
+    depends_on:
+      - api_qa
+  # ==========================================
+  # ENTORNO PRODUCCIÓN (Real)
+  # ==========================================
+  mongodb_prod:
+    image: mongo:latest
+    container_name: informes_mongodb_prod
+    restart: always
+    ports:
+      - "8086:27017" # Puerto externo exclusivo para Producción
+    volumes:
+      - datos_informes_uce_prod:/data/db
+
+  api_prod:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    container_name: informes_api_prod
+    restart: always
+    ports:
+      - "8084:4000" # Puerto exclusivo para Producción
+    volumes:
+      - C:\Users\Lenovo LOQ\Desktop\Docentes_PROD:/archivos_docentes # Carpeta de Escritorio aislada
+    environment:
+      - MONGODB_URI=mongodb://mongodb_prod:27017/sistema-informes-prod
+      - FRONTEND_URL=http://10.1.1.1
       - ADMIN_CORREO=admin@uce.edu.ec
       - ADMIN_CLAVE=admin123
       - ADMIN_CEDULA=0000000000
       - PERIODO_ACTUAL=2026-2026
     depends_on:
-      - mongodb
+      - mongodb_prod
 
-  # 3. FRONTEND (Next.js)
-  web:
+  web_prod:
     build:
       context: .
       dockerfile: apps/web/Dockerfile
-    container_name: informes_web
+      args:
+        - NEXT_PUBLIC_BASE_PATH=/prod
+        - NEXT_PUBLIC_API_URL=http://localhost/prod/api
+    container_name: informes_web_prod
     restart: always
     ports:
-      - "3000:3000"
+      - "8083:3000"
     environment:
-      # Aunque el contenedor internamente corra, la web se visualiza en el navegador del usuario
-      # Por lo que debe apuntar a la IP pública/local del servidor. 
-      # Si accedes desde la misma máquina, localhost funciona. Si es en red, pon la IP del servidor.
-      - NEXT_PUBLIC_API_URL=http://localhost:4000 
+      - NEXT_PUBLIC_BASE_PATH=/prod
+      - NEXT_PUBLIC_API_URL=http://localhost/prod/api
     depends_on:
-      - api
+      - api_prod
 
-# Declaración del volumen
+  # ==========================================
+  # PROXY NGINX (Enrutador Web)
+  # ==========================================
+  proxy_nginx:
+    image: nginx:alpine
+    container_name: informes_nginx_proxy
+    restart: always
+    ports:
+      - "80:80" # Único punto de entrada web unificado (IP del servidor)
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - web_qa
+      - web_prod
+
+# Declaración de los volúmenes aislados
 volumes:
-  datos_informes_uce:
+  datos_informes_uce_qa:
+  datos_informes_uce_prod:

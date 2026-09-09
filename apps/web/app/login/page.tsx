@@ -3,6 +3,16 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
+const getRedirectUrl = (ruta: string) => {
+  const entorno = process.env.NEXT_PUBLIC_ENV?.trim();
+
+  if (!entorno) {
+    return ruta;
+  }
+
+  return `/${entorno.replace(/^\/+|\/+$/g, '')}/${ruta.replace(/^\/+/, '')}`;
+};
+
 export default function LoginPage() {
   const [correo, setCorreo] = useState('');
   const [password, setPassword] = useState('');
@@ -11,12 +21,11 @@ export default function LoginPage() {
   const router = useRouter();
 
   const manejarLogin = async (e: React.FormEvent) => {
-    e.preventDefault(); // Evita que la página se recargue
+    e.preventDefault(); 
     setError('');
     setCargando(true);
 
     try {
-      // Llamamos a la ruta de NestJS que acabamos de crear
       const respuesta = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/login`, {
         method: 'POST',
         headers: {
@@ -31,16 +40,16 @@ export default function LoginPage() {
 
       const data = await respuesta.json();
 
-      // Guardamos la "llave" y los datos del usuario en el navegador
       localStorage.setItem('token', data.access_token);
       localStorage.setItem('usuario', JSON.stringify(data.usuario));
 
-      // Magia del enrutamiento: Redirigimos según el rol
-      if (data.usuario.rol === 'admin') {
-        router.push('/dashboard/admin');
-      } else {
-        router.push('/dashboard/docente');
-      }
+      // 👇 2. Determina el destino base según el rol
+      const rutaBase = data.usuario.rol === 'admin' ? '/dashboard/admin' : '/dashboard/docente';
+
+      // 👇 3. Envuelve la ruta con el helper para que anteponga /qa o /prod automáticamente
+      const destinoFinal = getRedirectUrl(rutaBase);
+      
+      router.push(destinoFinal);
       
     } catch (err: any) {
       setError(err.message);

@@ -1,3 +1,4 @@
+/* eslint-disable prefer-const */
 /* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unused-vars */
@@ -9,9 +10,9 @@ import { pdf } from "@react-pdf/renderer";
 import { PlantillaPDF } from "./PlantillaPDF";
 
 // ============================================================================
-// COMPONENTES HELPER CON VISTA PREVIA MEJORADA Y SINCRONIZACIÓN DE SERVIDOR
+// COMPONENTES HELPER CON LÍMITE DE PESO DINÁMICO
 // ============================================================================
-const EvidenciaHiddenUploader = ({ name, label, watch, setValue, esSoloLectura }: { name: string; label: string; watch: any; setValue: any; esSoloLectura: boolean; }) => {
+const EvidenciaHiddenUploader = ({ name, label, watch, setValue, esSoloLectura, pesoMaximoMB }: { name: string; label: string; watch: any; setValue: any; esSoloLectura: boolean; pesoMaximoMB: number; }) => {
   const files = watch(name) || [];
   const [previewIndex, setPreviewIndex] = useState<number | null>(null);
 
@@ -21,9 +22,9 @@ const EvidenciaHiddenUploader = ({ name, label, watch, setValue, esSoloLectura }
       const validFiles: File[] = [];
       newFiles.forEach(file => {
         const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
-        const isValidSize = file.size <= 2 * 1024 * 1024; // 2MB
+        const isValidSize = file.size <= pesoMaximoMB * 1024 * 1024; 
         if (!isPdf) alert(`⚠️ El archivo "${file.name}" no es un PDF.`);
-        else if (!isValidSize) alert(`⚠️ El archivo "${file.name}" supera el límite de 2MB.`);
+        else if (!isValidSize) alert(`⚠️ El archivo "${file.name}" supera el límite establecido de ${pesoMaximoMB}MB.`);
         else validFiles.push(file);
       });
       if (validFiles.length > 0) setValue(name, [...files, ...validFiles]);
@@ -48,7 +49,7 @@ const EvidenciaHiddenUploader = ({ name, label, watch, setValue, esSoloLectura }
         <div style={{ marginTop: "10px", padding: "10px", backgroundColor: "#fff", border: "1px solid #cbd5e1", borderRadius: "6px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
             <div style={{ fontWeight: "bold", fontSize: "0.85em", color: "#334155" }}>📁 {label}</div>
-            <div style={{ fontSize: "0.75em", color: "#64748b", fontStyle: "italic" }}>Máx. 2MB / PDF</div>
+            <div style={{ fontSize: "0.75em", color: "#64748b", fontStyle: "italic" }}>Máx. {pesoMaximoMB}MB / PDF</div>
           </div>
           <ul style={{ listStyle: "none", padding: 0, margin: 0, fontSize: "0.85em" }}>
             {files.map((file: any, i: number) => (
@@ -67,7 +68,6 @@ const EvidenciaHiddenUploader = ({ name, label, watch, setValue, esSoloLectura }
                     )}
                   </span>
                 </div>
-                {/* 👇 MODAL VISTA PREVIA FULL SCREEN */}
                 {previewIndex === i && (
                   <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.85)', zIndex: 9999, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '20px' }}>
                     <div style={{ width: '100%', maxWidth: '1000px', display: 'flex', justifyContent: 'space-between', marginBottom: '10px', alignItems: 'center' }}>
@@ -86,7 +86,7 @@ const EvidenciaHiddenUploader = ({ name, label, watch, setValue, esSoloLectura }
   );
 };
 
-const EvidenciaUploader = ({ name, label, watch, setValue, esSoloLectura }: { name: string; label: string; watch: any; setValue: any; esSoloLectura: boolean; }) => {
+const EvidenciaUploader = ({ name, label, watch, setValue, esSoloLectura, pesoMaximoMB }: { name: string; label: string; watch: any; setValue: any; esSoloLectura: boolean; pesoMaximoMB: number; }) => {
   const files = watch(name) || [];
   const [previewIndex, setPreviewIndex] = useState<number | null>(null);
 
@@ -96,9 +96,9 @@ const EvidenciaUploader = ({ name, label, watch, setValue, esSoloLectura }: { na
       const validFiles: File[] = [];
       newFiles.forEach(file => {
         const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
-        const isValidSize = file.size <= 2 * 1024 * 1024;
+        const isValidSize = file.size <= pesoMaximoMB * 1024 * 1024;
         if (!isPdf) alert(`⚠️ El archivo "${file.name}" no es un PDF.`);
-        else if (!isValidSize) alert(`⚠️ El archivo "${file.name}" supera el límite de 2MB.`);
+        else if (!isValidSize) alert(`⚠️ El archivo "${file.name}" supera el límite de ${pesoMaximoMB}MB.`);
         else validFiles.push(file);
       });
       if (validFiles.length > 0) setValue(name, [...files, ...validFiles]);
@@ -120,7 +120,7 @@ const EvidenciaUploader = ({ name, label, watch, setValue, esSoloLectura }: { na
     <div style={{ marginTop: "10px", padding: "10px", backgroundColor: "#fff", border: "1px solid #cbd5e1", borderRadius: "6px", width: "100%" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
         <div style={{ fontWeight: "bold", fontSize: "0.9em", color: "#334155" }}>{label}</div>
-        <div style={{ fontSize: "0.75em", color: "#64748b", fontStyle: "italic" }}>Máx. 2MB / PDF</div>
+        <div style={{ fontSize: "0.75em", color: "#64748b", fontStyle: "italic" }}>Máx. {pesoMaximoMB}MB / PDF</div>
       </div>
       {!esSoloLectura && <input type="file" accept=".pdf" multiple onChange={handleAdd} style={{ fontSize: "0.85em", marginBottom: "10px" }} />}
       {files.length > 0 && (
@@ -141,7 +141,6 @@ const EvidenciaUploader = ({ name, label, watch, setValue, esSoloLectura }: { na
                   )}
                 </span>
               </div>
-              {/* 👇 MODAL VISTA PREVIA FULL SCREEN */}
               {previewIndex === i && (
                 <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.85)', zIndex: 9999, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '20px' }}>
                   <div style={{ width: '100%', maxWidth: '1000px', display: 'flex', justifyContent: 'space-between', marginBottom: '10px', alignItems: 'center' }}>
@@ -177,6 +176,34 @@ export default function NuevoInformePage() {
   const [informeId, setInformeId] = useState<string | null>(null);
   const [acordeon, setAcordeon] = useState({ sec3: false, sec4: false, sec5: false, sec6: false, sec7: false });
 
+  // 👇 ESTADO DE CONFIGURACIÓN GLOBAL (INCLUYE LOGOS)
+  const [configSistema, setConfigSistema] = useState({
+    pesoMaximoMB: 2,
+    logo_facultad: null as string | null,
+    logo_carrera: null as string | null,
+    reglas: {
+      general_ficha: "01_{PERIODO}_FICHA_{DOCENTE}",
+      general_horario: "02_{PERIODO}_HORARIO_{DOCENTE}",
+      general_cap_tac: "03_TAC_\\d+_{DOCENTE}_", 
+      general_cap_metodologica: "03_MET_\\d+_{DOCENTE}_",
+      general_cap_profesional: "03_PRO_\\d+_{DOCENTE}_",
+      silabo_evidencia: "01_{PERIODO}_{COD_MATERIA}_{NOM_MATERIA}",
+      seguimiento_evidencia: "02_{PERIODO}_{PARALELO}_{COD_MATERIA}_Seguimiento",
+      asistencia_evidencia: "03_{PERIODO}_{PARALELO}_{COD_MATERIA}_Asistencia",
+      notas_evidencia: "04_{PERIODO}_{PARALELO}_{COD_MATERIA}_Notas",
+      indiv_evidencia: "05_{PERIODO}_{PARALELO}_{COD_MATERIA}_TI_",
+      grupales_evidencia: "06_{PERIODO}_{PARALELO}_{COD_MATERIA}_TG_",
+      pae_evidencia: "07_{PERIODO}_{PARALELO}_{COD_MATERIA}_PAE_",
+      refuerzo_evidencia: "08_{PERIODO}_{PARALELO}_{COD_MATERIA}_Refuerzo_",
+      sumativa1_evidencia: "09_{PERIODO}_{PARALELO}_{COD_MATERIA}_Sumativa1_E",
+      sumativa_final_evidencia: "10_{PERIODO}_{PARALELO}_{COD_MATERIA}_SumativaFinal_E",
+      recuperacion_evidencia: "11_{PERIODO}_{PARALELO}_{COD_MATERIA}_Recuperacion_E",
+      hab_evidencia: "12_{PERIODO}_Ev_HB_{PARALELO}_{COD_MATERIA}_",
+      res_evidencia: "13_{PERIODO}_Ev_RA_{PARALELO}_{COD_MATERIA}_",
+      tac_evidencia: "14_{PERIODO}_Ev_TAC_{PARALELO}_{COD_MATERIA}_"
+    }
+  });
+
   const toggleAcordeon = (seccion: keyof typeof acordeon) => setAcordeon((prev) => ({ ...prev, [seccion]: !prev[seccion] }));
 
   const { register, handleSubmit, control, reset, watch, getValues, setValue } = useForm<FieldValues>({ defaultValues: { asignaturas: [], titulaciones_asignadas: [] } });
@@ -189,63 +216,87 @@ export default function NuevoInformePage() {
   const { fields: camposProyectosInv, append: appendProyectoInv, remove: removeProyectoInv } = useFieldArray({ control, name: "proyectos_investigacion" });
 
   useEffect(() => {
-    const usuarioGuardado = localStorage.getItem("usuario");
-    if (usuarioGuardado) {
-      const datosUsuario = JSON.parse(usuarioGuardado);
-      setUserId(datosUsuario.cedula);
-      setEsSoloLectura(datosUsuario.rol !== "docente");
-      const urlParams = new URLSearchParams(window.location.search);
-      const idDeLaUrl = urlParams.get("id");
-      if (idDeLaUrl) { setInformeId(idDeLaUrl); cargarInformeExistente(idDeLaUrl); } else { cargarDatosPrecargados(datosUsuario); }
-    } else { router.push("/"); }
-  }, []);
+    const cargarConfigYUsuario = async () => {
+      try {
+        const resConfig = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/informes/sistema/configuracion`);
+        if (resConfig.ok) {
+          const configData = await resConfig.json();
+          setConfigSistema({
+            pesoMaximoMB: configData.pesoMaximoMB || 2,
+            logo_facultad: configData.logo_facultad || null,
+            logo_carrera: configData.logo_carrera || null,
+            reglas: configData.reglas || configSistema.reglas
+          });
+        }
+      } catch (e) {
+        console.error("No se pudo cargar la configuración global.");
+      }
 
-  // 👇 FUNCIÓN PARA CRUZAR LO QUE HAY EN EL SERVIDOR CON EL FORMULARIO
-  const clasificarArchivosDelServidor = (archivosEnServidor: any[], asignaturas: any[], dataDocente: any) => {
-    const mapped: Record<string, any[]> = {};
-    const pRaw = (dataDocente.periodo || "2026-2026").replace(/\//g, "-");
-    const p = pRaw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const an = dataDocente.docente_nombre ? dataDocente.docente_nombre.replace(/\s+/g, '').normalize('NFD').replace(/[\u0300-\u036f]/g, '') : 'ApellidoNombre';
-
-    const findAndMap = (key: string, regex: RegExp) => {
-      const matches = archivosEnServidor.filter(f => regex.test(f.name));
-      if (matches.length > 0) mapped[key] = matches;
+      const usuarioGuardado = localStorage.getItem("usuario");
+      if (usuarioGuardado) {
+        const datosUsuario = JSON.parse(usuarioGuardado);
+        setUserId(datosUsuario.cedula);
+        setEsSoloLectura(datosUsuario.rol !== "docente");
+        const urlParams = new URLSearchParams(window.location.search);
+        const idDeLaUrl = urlParams.get("id");
+        if (idDeLaUrl) { setInformeId(idDeLaUrl); cargarInformeExistente(idDeLaUrl); } else { cargarDatosPrecargados(datosUsuario); }
+      } else { router.push("/"); }
     };
 
-    findAndMap('general_ficha', new RegExp(`^01_${p}_FICHA_.+\\.pdf$`, 'i'));
-    findAndMap('general_horario', new RegExp(`^02_${p}_HORARIO_.+\\.pdf$`, 'i'));
-    findAndMap('general_cap_tac', new RegExp(`^03_TAC_\\d+_.+\\.pdf$`, 'i'));
-    findAndMap('general_cap_metodologica', new RegExp(`^03_MET_\\d+_.+\\.pdf$`, 'i'));
-    findAndMap('general_cap_profesional', new RegExp(`^03_PRO_\\d+_.+\\.pdf$`, 'i'));
+    cargarConfigYUsuario();
+  }, []);
 
-    asignaturas.forEach((asig, idx) => {
-      const cp = (asig.paralelo || 'SinParalelo').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      const cm = (asig.codigo || 'SinCodigo').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const procesarPlantilla = (plantilla: string, datos: any) => {
+    let pSaneado = (datos.periodo || "26-26").replace(/\//g, "-");
+    if (pSaneado.length === 9) pSaneado = `${pSaneado.substring(2,4)}-${pSaneado.substring(7,9)}`; 
 
-      findAndMap(`asignaturas.${idx}.silabo_evidencia`, new RegExp(`^01_${p}_${cm}_.+\\.pdf$`, 'i'));
-      findAndMap(`asignaturas.${idx}.seguimiento_evidencia`, new RegExp(`^02_${p}_${cp}_${cm}_Seguimiento.*\\.pdf$`, 'i'));
-      findAndMap(`asignaturas.${idx}.asistencia_evidencia`, new RegExp(`^03_${p}_${cp}_${cm}_Asistencia.*\\.pdf$`, 'i'));
-      findAndMap(`asignaturas.${idx}.notas_evidencia`, new RegExp(`^04_${p}_${cp}_${cm}_Notas.*\\.pdf$`, 'i'));
-      findAndMap(`asignaturas.${idx}.indiv_evidencia`, new RegExp(`^05_${p}_${cp}_${cm}_TI_\\d+\\.pdf$`, 'i'));
-      findAndMap(`asignaturas.${idx}.grupales_evidencia`, new RegExp(`^06_${p}_${cp}_${cm}_TG_\\d+\\.pdf$`, 'i'));
-      findAndMap(`asignaturas.${idx}.pae_evidencia`, new RegExp(`^07_${p}_${cp}_${cm}_PAE_\\d+\\.pdf$`, 'i'));
-      findAndMap(`asignaturas.${idx}.refuerzo_evidencia`, new RegExp(`^08_${p}_${cp}_${cm}_Refuerzo_\\d+\\.pdf$`, 'i'));
-      findAndMap(`asignaturas.${idx}.sumativa1_evidencia`, new RegExp(`^09_${p}_${cp}_${cm}_Sumativa1_E\\d+\\.pdf$`, 'i'));
-      findAndMap(`asignaturas.${idx}.sumativa_final_evidencia`, new RegExp(`^10_${p}_${cp}_${cm}_SumativaFinal_E\\d+\\.pdf$`, 'i'));
-      findAndMap(`asignaturas.${idx}.recuperacion_evidencia`, new RegExp(`^11_${p}_${cp}_${cm}_Recuperacion_E\\d+\\.pdf$`, 'i'));
-      findAndMap(`asignaturas.${idx}.hab_evidencia`, new RegExp(`^12_${p}_Ev_HB_${cp}_${cm}_\\d+\\.pdf$`, 'i'));
-      findAndMap(`asignaturas.${idx}.res_evidencia`, new RegExp(`^13_${p}_Ev_RA_${cp}_${cm}_\\d+\\.pdf$`, 'i'));
-      findAndMap(`asignaturas.${idx}.tac_evidencia`, new RegExp(`^14_${p}_Ev_TAC_${cp}_${cm}_\\d+\\.pdf$`, 'i'));
+    const docenteSaneado = datos.docente ? datos.docente.replace(/\s+/g, '').normalize('NFD').replace(/[\u0300-\u036f]/g, '') : 'ApellidoNombre';
+    const matSaneada = datos.nomMateria ? datos.nomMateria.replace(/\s+/g, '').normalize('NFD').replace(/[\u0300-\u036f]/g, '') : 'NombreMateria';
+
+    let stringFinal = plantilla
+      .replace("{PERIODO}", pSaneado)
+      .replace("{DOCENTE}", docenteSaneado)
+      .replace("{PARALELO}", datos.paralelo || 'SinParalelo')
+      .replace("{COD_MATERIA}", datos.codMateria || 'SinCodigo')
+      .replace("{NOM_MATERIA}", matSaneada);
+
+    const sufijoEjemplo = stringFinal.endsWith('_') || stringFinal.endsWith('E') ? '1.pdf' : '.pdf';
+    
+    return {
+      regex: new RegExp(`^${stringFinal.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace('\\\\d+', '\\d+')}.*\\.pdf$`, 'i'),
+      ejemplo: `${stringFinal.replace('\\d+', 'YYYYMMDD')}${sufijoEjemplo}`
+    };
+  };
+
+  const clasificarArchivosDelServidor = (archivosEnServidor: any[], asignaturas: any[], dataDocente: any) => {
+    const mapped: Record<string, any[]> = {};
+
+    const findAndMap = (keyPath: string, keyRegla: string, datosContexto: any) => {
+      const plantillaActual = configSistema.reglas[keyRegla as keyof typeof configSistema.reglas];
+      if (!plantillaActual) return;
+      const { regex } = procesarPlantilla(plantillaActual, datosContexto);
+      const matches = archivosEnServidor.filter(f => regex.test(f.name));
+      if (matches.length > 0) mapped[keyPath] = matches;
+    };
+
+    const ctxGeneral = { periodo: dataDocente.periodo, docente: dataDocente.docente_nombre };
+    ["general_ficha", "general_horario", "general_cap_tac", "general_cap_metodologica", "general_cap_profesional"].forEach(key => {
+      findAndMap(key, key, ctxGeneral);
+    });
+
+    asignaturas.forEach((asig: any, idx: number) => {
+      const ctxAsig = { periodo: dataDocente.periodo, paralelo: asig.paralelo, codMateria: asig.codigo, nomMateria: asig.materia };
+      const asigKeys = ["silabo_evidencia", "seguimiento_evidencia", "asistencia_evidencia", "notas_evidencia", "indiv_evidencia", "grupales_evidencia", "pae_evidencia", "refuerzo_evidencia", "sumativa1_evidencia", "sumativa_final_evidencia", "recuperacion_evidencia", "hab_evidencia", "res_evidencia", "tac_evidencia"];
+      asigKeys.forEach(key => findAndMap(`asignaturas.${idx}.${key}`, key, ctxAsig));
     });
 
     return mapped;
   };
 
-// 👇 Inyección de Archivos del Servidor en los estados
   const inyectarArchivosEnFormulario = async (baseData: any) => {
     try {
       const nom = baseData.docente_nombre || "Desconocido";
-      const per = baseData.periodo || "2026-2026";
+      const per = baseData.periodo || "26-26";
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/informes/escanear-archivos?docente=${nom}&periodo=${per}`);
       
       if (res.ok) {
@@ -258,17 +309,17 @@ export default function NuevoInformePage() {
 
         const mappedFiles = clasificarArchivosDelServidor(serverFilesObjects, baseData.asignaturas, baseData);
 
-        // Anexar los archivos al objeto de reset
         Object.keys(mappedFiles).forEach(key => {
           if (key.startsWith('general_')) {
             baseData[key] = mappedFiles[key];
           } else if (key.startsWith('asignaturas.')) {
-            // 👇 CORRECCIÓN DE TIPADO TYPESCRIPT
             const partes = key.split('.');
             const idxStr = partes[1] as string;
             const asigKey = partes[2] as string;
             
-            baseData.asignaturas[parseInt(idxStr, 10)][asigKey] = mappedFiles[key];
+            if (baseData.asignaturas[parseInt(idxStr, 10)]) {
+              baseData.asignaturas[parseInt(idxStr, 10)][asigKey] = mappedFiles[key];
+            }
           }
         });
       }
@@ -287,7 +338,7 @@ export default function NuevoInformePage() {
         asignaturasBD.sort((a: any, b: any) => a.materia.localeCompare(b.materia));
         
         const baseData = {
-          docente_nombre: bd.datosEstructurales?.docente_nombre || "", periodo: bd.periodoAcademico || "2026-2026", firma_docente: bd.datosEstructurales?.firma_docente || "", fecha_elaboracion: bd.datosEstructurales?.fecha_elaboracion || "",
+          docente_nombre: bd.datosEstructurales?.docente_nombre || "", periodo: bd.periodoAcademico || "26-26", firma_docente: bd.datosEstructurales?.firma_docente || "", fecha_elaboracion: bd.datosEstructurales?.fecha_elaboracion || "",
           asignaturas: asignaturasBD, titulaciones_asignadas: bd.actividades?.titulacion || [], titulaciones_lector: bd.actividades?.lector || [], practicas: Array.isArray(bd.actividades?.practicas) ? bd.actividades.practicas : [],
           vinc_nombre: bd.actividades?.vinculacion?.nombre || "", vinc_codigo_proyecto: bd.actividades?.vinculacion?.codigo || "", vinc_tipo_proyecto: bd.actividades?.vinculacion?.tipo || "", vinc_programa: bd.actividades?.vinculacion?.programa || "",
           vinc_estado: bd.actividades?.vinculacion?.estado || "", vinc_objetivo: bd.actividades?.vinculacion?.objetivo || "", vinc_facultad: bd.actividades?.vinculacion?.facultad || "Facultad de Ingeniería y Ciencias Aplicadas",
@@ -300,8 +351,6 @@ export default function NuevoInformePage() {
           publicaciones: Array.isArray(bd.actividades?.investigacion?.publicaciones) ? bd.actividades.investigacion.publicaciones : [], proyectos_investigacion: Array.isArray(bd.actividades?.investigacion?.proyectos) ? bd.actividades.investigacion.proyectos : [],
           designaciones: bd.datosEstructurales?.designaciones || "", designaciones_fecha_inicio: bd.datosEstructurales?.designaciones_fecha_inicio || "", designaciones_fecha_fin: bd.datosEstructurales?.designaciones_fecha_fin || "",
         };
-
-        // Ejecutar la sincronización
         await inyectarArchivosEnFormulario(baseData);
       } else { alert("El backend no pudo encontrar este informe."); }
     } catch (error) { console.error("Error al cargar el informe:", error); }
@@ -330,12 +379,10 @@ export default function NuevoInformePage() {
         }
       }
       const baseData = {
-        docente_nombre: datosUsuario.nombres || "", periodo: "2026-2026", firma_docente: datosUsuario.nombres || "",
+        docente_nombre: datosUsuario.nombres || "", periodo: "26-26", firma_docente: datosUsuario.nombres || "",
         asignaturas: asignaturasFormateadas.length > 0 ? asignaturasFormateadas : [{ carrera: "", materia: "", codigo: "", paralelo: "", tiene_pae: false }],
         titulaciones_asignadas: titulacionesFormateadas, vinc_facultad: "Facultad de Ingeniería y Ciencias Aplicadas",
       };
-
-      // Ejecutar la sincronización
       await inyectarArchivosEnFormulario(baseData);
     } catch (err) { console.error("Error de red:", err); }
   };
@@ -354,53 +401,46 @@ export default function NuevoInformePage() {
 
   const validarNombresArchivos = (data: any, asignaturasSincronizadas: any[]) => {
     const errores: string[] = [];
-    const pRaw = (data.periodo || "2026-2026").replace(/\//g, "-");
-    const p = pRaw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); 
-    const an = data.docente_nombre ? data.docente_nombre.replace(/\s+/g, '').normalize('NFD').replace(/[\u0300-\u036f]/g, '') : 'ApellidoNombre';
 
-    const checkFile = (files: any, regexObj: RegExp, formatoEjemplo: string) => {
-      if (!files || files.length === 0) return;
+    const checkFile = (files: any, keyRegla: string, datosContexto: any) => {
+      const plantillaActual = configSistema.reglas[keyRegla as keyof typeof configSistema.reglas];
+      if (!files || files.length === 0 || !plantillaActual) return;
+      
+      const { regex, ejemplo } = procesarPlantilla(plantillaActual, datosContexto);
+      
       Array.from(files).forEach((file: any) => {
-        if (!file.isServer && !regexObj.test(file.name)) {
-          errores.push(`❌ "${file.name}"\n   👉 Nombre requerido: ${formatoEjemplo}`);
+        if (!file.isServer && !regex.test(file.name)) {
+          errores.push(`❌ Archivo: "${file.name}"\n   💡 Ejemplo: ${ejemplo}`);
         }
       });
     };
 
-    checkFile(data.general_ficha, new RegExp(`^01_${p}_FICHA_.+\\.pdf$`, 'i'), `01_${pRaw}_FICHA_${an}.pdf`);
-    checkFile(data.general_horario, new RegExp(`^02_${p}_HORARIO_.+\\.pdf$`, 'i'), `02_${pRaw}_HORARIO_${an}.pdf`);
-    checkFile(data.general_cap_tac, new RegExp(`^03_TAC_\\d+_.+\\.pdf$`, 'i'), `03_TAC_YYYYMMDD_${an}_TemaCorto.pdf`);
-    checkFile(data.general_cap_metodologica, new RegExp(`^03_MET_\\d+_.+\\.pdf$`, 'i'), `03_MET_YYYYMMDD_${an}_TemaCorto.pdf`);
-    checkFile(data.general_cap_profesional, new RegExp(`^03_PRO_\\d+_.+\\.pdf$`, 'i'), `03_PRO_YYYYMMDD_${an}_TemaCorto.pdf`);
+    const ctxGeneral = { periodo: data.periodo, docente: data.docente_nombre };
+    ["general_ficha", "general_horario", "general_cap_tac", "general_cap_metodologica", "general_cap_profesional"].forEach(key => {
+      checkFile(data[key], key, ctxGeneral);
+    });
 
     asignaturasSincronizadas.forEach((asig) => {
-      const codParRaw = asig.paralelo || 'SinParalelo';
-      const codMatRaw = asig.codigo || 'SinCodigo';
-      const nomMatRaw = asig.materia ? asig.materia.replace(/\s+/g, '').normalize('NFD').replace(/[\u0300-\u036f]/g, '') : 'NombreMateria';
+      const ctxAsig = { periodo: data.periodo, paralelo: asig.paralelo, codMateria: asig.codigo, nomMateria: asig.materia };
+      const asigKeys = ["silabo_evidencia", "seguimiento_evidencia", "asistencia_evidencia", "notas_evidencia", "indiv_evidencia", "grupales_evidencia", "pae_evidencia", "refuerzo_evidencia", "sumativa1_evidencia", "sumativa_final_evidencia", "recuperacion_evidencia", "hab_evidencia", "res_evidencia", "tac_evidencia"];
       
-      const cp = codParRaw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      const cm = codMatRaw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-
-      checkFile(asig.silabo_evidencia, new RegExp(`^01_${p}_${cm}_.+\\.pdf$`, 'i'), `01_${pRaw}_${codMatRaw}_${nomMatRaw}.pdf`);
-      checkFile(asig.seguimiento_evidencia, new RegExp(`^02_${p}_${cp}_${cm}_Seguimiento.*\\.pdf$`, 'i'), `02_${pRaw}_${codParRaw}_${codMatRaw}_Seguimiento.pdf`);
-      checkFile(asig.asistencia_evidencia, new RegExp(`^03_${p}_${cp}_${cm}_Asistencia.*\\.pdf$`, 'i'), `03_${pRaw}_${codParRaw}_${codMatRaw}_Asistencia.pdf`);
-      checkFile(asig.notas_evidencia, new RegExp(`^04_${p}_${cp}_${cm}_Notas.*\\.pdf$`, 'i'), `04_${pRaw}_${codParRaw}_${codMatRaw}_Notas.pdf`);
-      checkFile(asig.indiv_evidencia, new RegExp(`^05_${p}_${cp}_${cm}_TI_\\d+\\.pdf$`, 'i'), `05_${pRaw}_${codParRaw}_${codMatRaw}_TI_1.pdf`);
-      checkFile(asig.grupales_evidencia, new RegExp(`^06_${p}_${cp}_${cm}_TG_\\d+\\.pdf$`, 'i'), `06_${pRaw}_${codParRaw}_${codMatRaw}_TG_1.pdf`);
-      checkFile(asig.pae_evidencia, new RegExp(`^07_${p}_${cp}_${cm}_PAE_\\d+\\.pdf$`, 'i'), `07_${pRaw}_${codParRaw}_${codMatRaw}_PAE_1.pdf`);
-      checkFile(asig.refuerzo_evidencia, new RegExp(`^08_${p}_${cp}_${cm}_Refuerzo_\\d+\\.pdf$`, 'i'), `08_${pRaw}_${codParRaw}_${codMatRaw}_Refuerzo_1.pdf`);
-      checkFile(asig.sumativa1_evidencia, new RegExp(`^09_${p}_${cp}_${cm}_Sumativa1_E\\d+\\.pdf$`, 'i'), `09_${pRaw}_${codParRaw}_${codMatRaw}_Sumativa1_E1.pdf`);
-      checkFile(asig.sumativa_final_evidencia, new RegExp(`^10_${p}_${cp}_${cm}_SumativaFinal_E\\d+\\.pdf$`, 'i'), `10_${pRaw}_${codParRaw}_${codMatRaw}_SumativaFinal_E1.pdf`);
-      checkFile(asig.recuperacion_evidencia, new RegExp(`^11_${p}_${cp}_${cm}_Recuperacion_E\\d+\\.pdf$`, 'i'), `11_${pRaw}_${codParRaw}_${codMatRaw}_Recuperacion_E1.pdf`);
-      checkFile(asig.hab_evidencia, new RegExp(`^12_${p}_Ev_HB_${cp}_${cm}_\\d+\\.pdf$`, 'i'), `12_${pRaw}_Ev_HB_${codParRaw}_${codMatRaw}_1.pdf`);
-      checkFile(asig.res_evidencia, new RegExp(`^13_${p}_Ev_RA_${cp}_${cm}_\\d+\\.pdf$`, 'i'), `13_${pRaw}_Ev_RA_${codParRaw}_${codMatRaw}_1.pdf`);
-      checkFile(asig.tac_evidencia, new RegExp(`^14_${p}_Ev_TAC_${cp}_${cm}_\\d+\\.pdf$`, 'i'), `14_${pRaw}_Ev_TAC_${codParRaw}_${codMatRaw}_1.pdf`);
+      asigKeys.forEach(key => checkFile(asig[key], key, ctxAsig));
     });
 
     return errores;
   };
 
+  // 👇 LÓGICA DE VALIDACIÓN MEJORADA (Incluye Archivos y Módulos Activos)
   const validarFormulario = (valoresActuales: any) => {
+    // 1. Archivos Generales Obligatorios
+    if (!valoresActuales.general_ficha || valoresActuales.general_ficha.length === 0) return "Falta cargar el archivo de Ficha Académica.";
+    if (!valoresActuales.general_horario || valoresActuales.general_horario.length === 0) return "Falta cargar el archivo de Horario de Clases.";
+
+    // 2. Archivos Obligatorios de Asignaturas
+    const archivosFaltantesAsig = valoresActuales.asignaturas?.some((a: any) => !a.silabo_evidencia?.length || !a.seguimiento_evidencia?.length || !a.asistencia_evidencia?.length || !a.notas_evidencia?.length);
+    if (archivosFaltantesAsig) return "Faltan archivos obligatorios en alguna asignatura (Requiere: Sílabo, Seguimiento, Asistencia y Notas).";
+
+    // 3. Tablas de Asignaturas
     const sec1Incompleta = valoresActuales.asignaturas?.some((a: any) => a.estudiantes === "" || a.asistencia === "" || a.aprobados === "" || a.reprobados === "");
     if (sec1Incompleta) return "Faltan datos numéricos obligatorios en la Tabla de Actividades de Docencia (Sección 1).";
 
@@ -408,49 +448,111 @@ export default function NuevoInformePage() {
     const sec2Incompleta = valoresActuales.asignaturas?.some((a: any) => camposTextoSec2.some(c => !a[c] || a[c].trim() === "") || !a.habilidades_tabla?.length || !a.tac_tabla?.length);
     if (sec2Incompleta) return "Faltan campos obligatorios en la Evaluación Específica por Asignatura (Sección 2).";
 
-    if (valoresActuales.titulaciones_asignadas?.length > 0) {
-      if (valoresActuales.titulaciones_asignadas.some((t: any) => !t.estudiante || !t.mecanismo || !t.tema || !t.fecha_designacion || !t.estado)) return "Faltan datos obligatorios en Trabajos de Titulación (Tutor).";
-    }
-    if (valoresActuales.titulaciones_lector?.length > 0) {
-      if (valoresActuales.titulaciones_lector.some((t: any) => !t.estudiante || !t.mecanismo || !t.tema || !t.fecha_designacion || !t.estado)) return "Faltan datos obligatorios en Trabajos de Titulación (Lector).";
-    }
-    if (valoresActuales.practicas?.length > 0) {
-      if (valoresActuales.practicas.some((p: any) => !p.estudiante || !p.tipo_identificacion || !p.identificacion || !p.tipo_empresa || !p.fecha_designacion)) return "Faltan datos obligatorios en Prácticas Preprofesionales.";
-    }
-    if (valoresActuales.vinc_nombre) {
-      if (!valoresActuales.vinc_codigo_proyecto || !valoresActuales.vinc_tipo_proyecto || !valoresActuales.vinc_programa || !valoresActuales.vinc_estado || !valoresActuales.vinc_objetivo || !valoresActuales.vinc_fecha_inicio || !valoresActuales.vinc_fecha_fin_planeado || !valoresActuales.vinc_fecha_fin_real || !valoresActuales.vinc_coordinador || !valoresActuales.vinc_correo_coordinador || !valoresActuales.vinc_telefono_coordinador || !valoresActuales.vinc_linea_investigacion || !valoresActuales.vinc_alcance || !valoresActuales.vinc_impacto_social || !valoresActuales.vinc_impacto_cientifico || !valoresActuales.vinc_impacto_economico || !valoresActuales.vinc_impacto_politico || !valoresActuales.vinc_financiamiento || !valoresActuales.vinc_presupuesto_plan || !valoresActuales.vinc_presupuesto_ejec || !valoresActuales.vinc_horas || !valoresActuales.vinc_tipo_participante || !valoresActuales.vinc_grupo_inv) return "Faltan datos en el Proyecto de Vinculación.";
-    }
-    if (valoresActuales.publicaciones?.length > 0) {
-      if (valoresActuales.publicaciones.some((p: any) => !p.titulo || !p.nombres || !p.codigo_ies || !p.tipo_pub || !p.tipo_articulo || !p.codigo_pub || !p.base_indexada || !p.issn || !p.revista || !p.fecha_pub || !p.cargo || !p.intercultural || !p.link_pub || !p.link_revista)) return "Faltan datos requeridos en Publicaciones y Ponencias.";
-    }
-    if (valoresActuales.proyectos_investigacion?.length > 0) {
-      if (valoresActuales.proyectos_investigacion.some((p: any) => !p.proyecto || !p.institucion || !p.cargo || !p.fecha_designacion || !p.fecha_inicio || !p.fecha_fin)) return "Faltan datos requeridos en Proyectos de Investigación.";
-    }
+    // 4. Módulos Adicionales (Si tienen datos precargados, se vuelven obligatorios)
+    if (valoresActuales.titulaciones_asignadas?.length > 0 && valoresActuales.titulaciones_asignadas.some((t: any) => !t.estudiante || !t.mecanismo || !t.tema || !t.fecha_designacion || !t.estado)) return "Faltan datos obligatorios en Trabajos de Titulación (Tutor).";
+    if (valoresActuales.titulaciones_lector?.length > 0 && valoresActuales.titulaciones_lector.some((t: any) => !t.estudiante || !t.mecanismo || !t.tema || !t.fecha_designacion || !t.estado)) return "Faltan datos obligatorios en Trabajos de Titulación (Lector).";
+    if (valoresActuales.practicas?.length > 0 && valoresActuales.practicas.some((p: any) => !p.estudiante || !p.tipo_identificacion || !p.identificacion || !p.tipo_empresa || !p.fecha_designacion)) return "Faltan datos obligatorios en Prácticas Preprofesionales.";
+    if (valoresActuales.vinc_nombre && (!valoresActuales.vinc_codigo_proyecto || !valoresActuales.vinc_tipo_proyecto || !valoresActuales.vinc_programa || !valoresActuales.vinc_estado || !valoresActuales.vinc_objetivo || !valoresActuales.vinc_fecha_inicio || !valoresActuales.vinc_fecha_fin_planeado || !valoresActuales.vinc_fecha_fin_real || !valoresActuales.vinc_coordinador || !valoresActuales.vinc_correo_coordinador || !valoresActuales.vinc_telefono_coordinador || !valoresActuales.vinc_linea_investigacion || !valoresActuales.vinc_alcance || !valoresActuales.vinc_impacto_social || !valoresActuales.vinc_impacto_cientifico || !valoresActuales.vinc_impacto_economico || !valoresActuales.vinc_impacto_politico || !valoresActuales.vinc_financiamiento || !valoresActuales.vinc_presupuesto_plan || !valoresActuales.vinc_presupuesto_ejec || !valoresActuales.vinc_horas || !valoresActuales.vinc_tipo_participante || !valoresActuales.vinc_grupo_inv)) return "Faltan datos en el Proyecto de Vinculación.";
+    if (valoresActuales.publicaciones?.length > 0 && valoresActuales.publicaciones.some((p: any) => !p.titulo || !p.nombres || !p.codigo_ies || !p.tipo_pub || !p.tipo_articulo || !p.codigo_pub || !p.base_indexada || !p.issn || !p.revista || !p.fecha_pub || !p.cargo || !p.intercultural || !p.link_pub || !p.link_revista)) return "Faltan datos requeridos en Publicaciones y Ponencias.";
+    if (valoresActuales.proyectos_investigacion?.length > 0 && valoresActuales.proyectos_investigacion.some((p: any) => !p.proyecto || !p.institucion || !p.cargo || !p.fecha_designacion || !p.fecha_inicio || !p.fecha_fin)) return "Faltan datos requeridos en Proyectos de Investigación.";
 
     return "";
   };
 
+  const allValuesForProgress = watch();
+  // 👇 CÁLCULO DE PROGRESO MEJORADO (Considera Archivos y Tablas Obligatorias)
+  const calcularProgreso = () => {
+    if (!allValuesForProgress || !allValuesForProgress.asignaturas) return 0;
+    let totales = 0;
+    let llenos = 0;
+
+    const increment = (isFilled: boolean) => {
+      totales++;
+      if (isFilled) llenos++;
+    };
+
+    // 1. Archivos Generales Obligatorios
+    increment(allValuesForProgress.general_ficha?.length > 0);
+    increment(allValuesForProgress.general_horario?.length > 0);
+
+    // 2. Asignaturas (Texto y Archivos Obligatorios)
+    const virtuales = sincronizarAsignaturasAgrupadas(allValuesForProgress.asignaturas || []);
+    const camposSec1 = ["estudiantes", "asistencia", "aprobados", "reprobados"];
+    const camposSec2 = ["resultados_tabla", "res_criterios", "res_instrumento", "resultados_actividades", "resultados_logro", "res_acciones", "res_propuestas", "res_cumplimiento", "hab_criterios", "hab_instrumento", "habilidades_actividades", "habilidades_logro", "hab_acciones", "hab_propuestas", "hab_cumplimiento", "tac_herramienta", "tac_actividades", "tac_logro", "tac_acciones", "tac_propuestas", "tac_cumplimiento"];
+    const archivosAsigObligatorios = ["silabo_evidencia", "seguimiento_evidencia", "asistencia_evidencia", "notas_evidencia"];
+
+    virtuales.forEach((asig: any) => {
+      camposSec1.forEach(c => increment(asig[c] !== "" && asig[c] !== undefined && asig[c] !== null));
+      camposSec2.forEach(c => increment(asig[c] && asig[c].trim() !== ""));
+      increment(asig.habilidades_tabla?.length > 0);
+      increment(asig.tac_tabla?.length > 0);
+      archivosAsigObligatorios.forEach(c => increment(asig[c]?.length > 0));
+    });
+
+    // 3. Módulos Adicionales Dinámicos
+    if (allValuesForProgress.titulaciones_asignadas?.length > 0) {
+      allValuesForProgress.titulaciones_asignadas.forEach((t: any) => {
+        ["estudiante", "mecanismo", "tema", "fecha_designacion", "estado"].forEach(c => increment(t[c] && t[c].trim() !== ""));
+      });
+    }
+    if (allValuesForProgress.titulaciones_lector?.length > 0) {
+      allValuesForProgress.titulaciones_lector.forEach((t: any) => {
+        ["estudiante", "mecanismo", "tema", "fecha_designacion", "estado"].forEach(c => increment(t[c] && t[c].trim() !== ""));
+      });
+    }
+    if (allValuesForProgress.practicas?.length > 0) {
+      allValuesForProgress.practicas.forEach((p: any) => {
+        ["estudiante", "tipo_identificacion", "identificacion", "empresa", "tipo_empresa", "fecha_designacion"].forEach(c => increment(p[c] && p[c].trim() !== ""));
+      });
+    }
+    if (allValuesForProgress.vinc_nombre && allValuesForProgress.vinc_nombre.trim() !== "") {
+      increment(true);
+      const camposVinc = ["vinc_codigo_proyecto", "vinc_tipo_proyecto", "vinc_programa", "vinc_estado", "vinc_objetivo", "vinc_fecha_inicio", "vinc_fecha_fin_planeado", "vinc_fecha_fin_real", "vinc_coordinador", "vinc_correo_coordinador", "vinc_telefono_coordinador", "vinc_linea_investigacion", "vinc_alcance", "vinc_impacto_social", "vinc_impacto_cientifico", "vinc_impacto_economico", "vinc_impacto_politico", "vinc_financiamiento", "vinc_presupuesto_plan", "vinc_presupuesto_ejec", "vinc_horas", "vinc_tipo_participante", "vinc_grupo_inv"];
+      camposVinc.forEach(c => increment(allValuesForProgress[c] && allValuesForProgress[c].trim() !== ""));
+    }
+    if (allValuesForProgress.publicaciones?.length > 0) {
+      allValuesForProgress.publicaciones.forEach((p: any) => {
+        ["titulo", "nombres", "codigo_ies", "tipo_pub", "tipo_articulo", "codigo_pub", "base_indexada", "issn", "revista", "fecha_pub", "cargo", "intercultural", "link_pub", "link_revista"].forEach(c => increment(p[c] && p[c].trim() !== ""));
+      });
+    }
+    if (allValuesForProgress.proyectos_investigacion?.length > 0) {
+      allValuesForProgress.proyectos_investigacion.forEach((p: any) => {
+        ["proyecto", "institucion", "cargo", "fecha_designacion", "fecha_inicio", "fecha_fin"].forEach(c => increment(p[c] && p[c].trim() !== ""));
+      });
+    }
+
+    if (totales === 0) return 0;
+    return Math.round((llenos / totales) * 100);
+  };
+  const progreso = calcularProgreso();
+
+  // 👇 LÓGICA DE GUARDADO PERMISIVO (Borrador)
   const onSubmit = async (data: FieldValues) => {
     const asignaturasSincronizadas = sincronizarAsignaturasAgrupadas(data.asignaturas);
     data.asignaturas = asignaturasSincronizadas;
 
+    // Solo bloqueamos el guardado si hay un error en el nombre de los archivos
     const erroresArchivos = validarNombresArchivos(data, asignaturasSincronizadas);
     if (erroresArchivos.length > 0) {
       const mostrarErrores = erroresArchivos.slice(0, 5).join('\n\n');
       const extraMsg = erroresArchivos.length > 5 ? `\n\n...y ${erroresArchivos.length - 5} archivos más con errores.` : '';
-      return alert(`🚫 ERROR EN FORMATO DE ARCHIVOS:\nPor favor, renombre los archivos antes de subirlos:\n\n${mostrarErrores}${extraMsg}`);
+      return alert(`🚫 ERROR EN NOMBRES DE ARCHIVOS:\nPor favor, asegúrese de cumplir con los formatos:\n\n${mostrarErrores}${extraMsg}`);
     }
 
+    // Advertencia de formulario incompleto (PERO permite guardar)
     const errorMsg = validarFormulario(data);
-    if (errorMsg) return alert(`Formulario Incompleto:\n\n${errorMsg}`);
+    if (errorMsg) {
+      const confirmar = window.confirm(`⚠️ El informe está incompleto (${progreso}%).\n\nDetalle: ${errorMsg}\n\n¿Deseas guardar un BORRADOR para continuar llenándolo después?`);
+      if (!confirmar) return;
+    }
 
     setCargando(true);
     try {
       const payload = {
         docenteId: userId,
-        periodoAcademico: data.periodo || "2026-2026",
+        periodoAcademico: data.periodo || "26-26",
         estado: "Borrador",
-        progreso: calcularProgreso(),
+        progreso: progreso,
         datosEstructurales: {
           docente_nombre: data.docente_nombre, fecha_elaboracion: data.fecha_elaboracion, firma_docente: data.firma_docente,
           asignaturas: asignaturasSincronizadas, designaciones: data.designaciones, designaciones_fecha_inicio: data.designaciones_fecha_inicio, designaciones_fecha_fin: data.designaciones_fecha_fin,
@@ -467,21 +569,32 @@ export default function NuevoInformePage() {
       const formData = new FormData();
       formData.append("informeData", JSON.stringify(payload));
 
+      let totalArchivosFisicosNuevos = 0; 
       const generalKeys = ["ficha", "horario", "cap_tac", "cap_metodologica", "cap_profesional"];
       generalKeys.forEach(key => {
         const files = data[`general_${key}`];
-        if (files?.length > 0) files.forEach((file: any) => {
-          if (!file.isServer) formData.append(`archivos_generales_${key}`, file);
-        });
+        if (files?.length > 0) {
+          files.forEach((file: any) => {
+            if (file instanceof File) {
+              formData.append(`archivos_generales_${key}`, file);
+              totalArchivosFisicosNuevos++;
+            }
+          });
+        }
       });
 
       asignaturasSincronizadas.forEach((asig, index) => {
         const asigKeys = ["res_evidencia", "hab_evidencia", "tac_evidencia", "pae_evidencia", "silabo_evidencia", "seguimiento_evidencia", "asistencia_evidencia", "notas_evidencia", "indiv_evidencia", "grupales_evidencia", "refuerzo_evidencia", "sumativa1_evidencia", "sumativa_final_evidencia", "recuperacion_evidencia"];
         asigKeys.forEach(key => {
           const files = asig[key];
-          if (files?.length > 0) files.forEach((file: any) => {
-            if (!file.isServer) formData.append(`archivo_asignatura_${asig.codigo}_${index}_${key}`, file);
-          });
+          if (files?.length > 0) {
+            files.forEach((file: any) => {
+              if (file instanceof File) {
+                formData.append(`archivo_asignatura_${asig.codigo}_${index}_${key}`, file);
+                totalArchivosFisicosNuevos++;
+              }
+            });
+          }
         });
       });
 
@@ -491,20 +604,48 @@ export default function NuevoInformePage() {
       if (respuesta.ok) {
         const resultado = await respuesta.json();
         if (!informeId && resultado._id) setInformeId(resultado._id);
-        alert(informeId ? "¡Informe y archivos actualizados exitosamente!" : "¡Informe y archivos creados exitosamente!");
+        alert(informeId ? "¡Informe guardado exitosamente!" : "¡Informe creado exitosamente!");
       } else { alert("Hubo un error al comunicarse con el servidor."); }
     } catch (error: any) { alert("Error de red: " + error.message); } finally { setCargando(false); }
   };
 
+  // 👇 LÓGICA DE DESCARGA ESTRICTA (Solo al 100%)
   const descargarPDF = async () => {
     const valoresActuales = getValues();
     valoresActuales.asignaturas = sincronizarAsignaturasAgrupadas(valoresActuales.asignaturas || []);
     
-    const errorMsg = validarFormulario(valoresActuales);
-    if (errorMsg) return alert(`No se puede generar el PDF.\n\n${errorMsg}`);
+    if (progreso < 100) {
+      const errorMsg = validarFormulario(valoresActuales);
+      return alert(`❌ NO SE PUEDE GENERAR EL PDF.\n\nEl informe debe estar al 100% de completitud para poder generarse.\n\nDetalle faltante: ${errorMsg || "Revisa los campos requeridos."}`);
+    }
+
+    const listaArchivos: string[] = [];
+    const generalKeys = ["general_ficha", "general_horario", "general_cap_tac", "general_cap_metodologica", "general_cap_profesional"];
+    generalKeys.forEach(key => {
+      if (valoresActuales[key]?.length > 0) {
+        valoresActuales[key].forEach((file: any) => listaArchivos.push(file.name));
+      }
+    });
+
+    valoresActuales.asignaturas.forEach((asig: any) => {
+      const asigKeys = ["res_evidencia", "hab_evidencia", "tac_evidencia", "pae_evidencia", "silabo_evidencia", "seguimiento_evidencia", "asistencia_evidencia", "notas_evidencia", "indiv_evidencia", "grupales_evidencia", "refuerzo_evidencia", "sumativa1_evidencia", "sumativa_final_evidencia", "recuperacion_evidencia"];
+      asigKeys.forEach(key => {
+        if (asig[key]?.length > 0) {
+          asig[key].forEach((file: any) => listaArchivos.push(file.name));
+        }
+      });
+    });
+    
+    valoresActuales.archivos_adjuntos = listaArchivos;
 
     try {
-      const blob = await pdf(<PlantillaPDF datos={valoresActuales} />).toBlob();
+      const blob = await pdf(
+        <PlantillaPDF 
+          datos={valoresActuales} 
+          logos={{ facultad: configSistema.logo_facultad ?? undefined, carrera: configSistema.logo_carrera ?? undefined }} 
+        />
+      ).toBlob();
+      
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
@@ -525,28 +666,6 @@ export default function NuevoInformePage() {
     return acc;
   }, []);
 
-  const asignaturasVigiladas = watch("asignaturas");
-  const calcularProgreso = () => {
-    if (!asignaturasVigiladas || asignaturasVigiladas.length === 0) return 0;
-    const camposSec1 = ["estudiantes", "asistencia", "aprobados", "reprobados"];
-    const camposSec2 = ["resultados_tabla", "res_criterios", "res_instrumento", "resultados_actividades", "resultados_logro", "res_acciones", "res_propuestas", "res_cumplimiento", "hab_criterios", "hab_instrumento", "habilidades_actividades", "habilidades_logro", "hab_acciones", "hab_propuestas", "hab_cumplimiento", "tac_herramienta", "tac_actividades", "tac_logro", "tac_acciones", "tac_propuestas", "tac_cumplimiento"];
-    const virtuales = sincronizarAsignaturasAgrupadas(asignaturasVigiladas);
-    const camposPorMateria = camposSec1.length + camposSec2.length + 2;
-    const camposTotales = virtuales.length * camposPorMateria;
-    let camposLlenos = 0;
-
-    virtuales.forEach((asig: any) => {
-      camposSec1.forEach((c) => { if (asig[c] !== "" && asig[c] !== undefined) camposLlenos++; });
-      camposSec2.forEach((c) => { if (asig[c] && asig[c].trim() !== "") camposLlenos++; });
-      if (asig.habilidades_tabla?.length > 0) camposLlenos++;
-      if (asig.tac_tabla?.length > 0) camposLlenos++;
-    });
-
-    return Math.round((camposLlenos / camposTotales) * 100) || 0;
-  };
-  const progreso = calcularProgreso();
-
-  // ESTILOS
   const inputStyle = { width: "100%", padding: "8px", boxSizing: "border-box" as const, border: "1px solid #ccc", borderRadius: "4px" };
   const fieldsetStyle = { marginBottom: "25px", padding: "20px", border: "1px solid #ccc", borderRadius: "5px", backgroundColor: "#fafafa", boxSizing: "border-box" as const };
   const legendStyle = { fontWeight: "bold", color: "#1a3b5c", padding: "0 10px", fontSize: "1.1em" };
@@ -591,7 +710,7 @@ export default function NuevoInformePage() {
 
           <div style={{ padding: "15px", backgroundColor: "#f8fafc", borderRadius: "6px", border: "1px solid #cbd5e1", marginBottom: "20px" }}>
             <label style={{ display: "block", fontWeight: "bold", color: "#334155", marginBottom: "10px" }}>
-              Cargar Archivos Generales <span style={{fontSize: "0.8em", fontWeight: "normal", color: "#64748b"}}>(Solo PDF, Máx. 2MB)</span>
+              Cargar Archivos Generales <span style={{fontSize: "0.8em", fontWeight: "normal", color: "#64748b"}}>(Solo PDF, Máx. {configSistema.pesoMaximoMB}MB)</span>
             </label>
             {!esSoloLectura && (
               <div style={{ marginBottom: "15px" }}>
@@ -601,8 +720,8 @@ export default function NuevoInformePage() {
                    style={selectMenu}
                 >
                     <option value="" disabled>Seleccione un documento para cargar...</option>
-                    <option value="general_ficha">1. Ficha Académica</option>
-                    <option value="general_horario">2. Horario de Clases</option>
+                    <option value="general_ficha">1. Ficha Académica (Obligatorio)</option>
+                    <option value="general_horario">2. Horario de Clases (Obligatorio)</option>
                     <optgroup label="3. Capacitaciones Recibidas">
                         <option value="general_cap_tac">↳ Capacitación TAC</option>
                         <option value="general_cap_metodologica">↳ Capacitación Metodológica</option>
@@ -612,38 +731,40 @@ export default function NuevoInformePage() {
               </div>
             )}
             <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-              <EvidenciaHiddenUploader name="general_ficha" label="Ficha Académica" watch={watch} setValue={setValue} esSoloLectura={esSoloLectura} />
-              <EvidenciaHiddenUploader name="general_horario" label="Horario de Clases" watch={watch} setValue={setValue} esSoloLectura={esSoloLectura} />
-              <EvidenciaHiddenUploader name="general_cap_tac" label="Capacitación TAC" watch={watch} setValue={setValue} esSoloLectura={esSoloLectura} />
-              <EvidenciaHiddenUploader name="general_cap_metodologica" label="Capacitación Metodológica" watch={watch} setValue={setValue} esSoloLectura={esSoloLectura} />
-              <EvidenciaHiddenUploader name="general_cap_profesional" label="Capacitación Profesional" watch={watch} setValue={setValue} esSoloLectura={esSoloLectura} />
+              <EvidenciaHiddenUploader name="general_ficha" label="Ficha Académica" watch={watch} setValue={setValue} esSoloLectura={esSoloLectura} pesoMaximoMB={configSistema.pesoMaximoMB} />
+              <EvidenciaHiddenUploader name="general_horario" label="Horario de Clases" watch={watch} setValue={setValue} esSoloLectura={esSoloLectura} pesoMaximoMB={configSistema.pesoMaximoMB} />
+              <EvidenciaHiddenUploader name="general_cap_tac" label="Capacitación TAC" watch={watch} setValue={setValue} esSoloLectura={esSoloLectura} pesoMaximoMB={configSistema.pesoMaximoMB} />
+              <EvidenciaHiddenUploader name="general_cap_metodologica" label="Capacitación Metodológica" watch={watch} setValue={setValue} esSoloLectura={esSoloLectura} pesoMaximoMB={configSistema.pesoMaximoMB} />
+              <EvidenciaHiddenUploader name="general_cap_profesional" label="Capacitación Profesional" watch={watch} setValue={setValue} esSoloLectura={esSoloLectura} pesoMaximoMB={configSistema.pesoMaximoMB} />
             </div>
           </div>
 
           <div style={subTitleStyle}>Tabla de Actividades de Docencia</div>
-          <div style={{ width: "100%", overflowX: "auto", marginBottom: "10px" }}>
-            <div style={{ minWidth: "950px" }}>
-              <div style={{ display: "grid", gridTemplateColumns: "40px 1.5fr 2fr 70px 70px 70px 70px 70px 70px 50px", gap: "5px", fontSize: "0.85em", textAlign: "center", fontWeight: "bold", alignItems: "center", marginBottom: "10px" }}>
-                <div>Nº</div><div>Carrera</div><div>Asignatura / Materia</div><div>Código</div><div>Paralelo</div>
-                <div>N° Est. {reqStar}</div><div>% Asist. {reqStar}</div><div>% Aprob. {reqStar}</div><div>% Reprob. {reqStar}</div><div style={{ color: "#0284c7" }}>PAE</div>
-              </div>
+<div style={{ width: "100%", overflowX: "auto", marginBottom: "10px" }}>
+  <div style={{ minWidth: "950px" }}>
+    
+    <div style={{ display: "grid", gridTemplateColumns: "40px 1.5fr 2fr 90px 70px 70px 70px 70px 70px 50px", gap: "5px", fontSize: "0.85em", textAlign: "center", fontWeight: "bold", alignItems: "center", marginBottom: "10px" }}>
+      <div>Nº</div><div>Carrera</div><div>Asignatura / Materia</div><div>Código</div><div>Paralelo</div>
+      <div>N° Est. {reqStar}</div><div>% Asist. {reqStar}</div><div>% Aprob. {reqStar}</div><div>% Reprob. {reqStar}</div><div style={{ color: "#0284c7" }}>PAE</div>
+    </div>
 
-              {fields.map((item, index) => (
-                <div key={item.id} style={{ display: "grid", gridTemplateColumns: "40px 1.5fr 2fr 70px 70px 70px 70px 70px 70px 50px", gap: "5px", marginBottom: "8px", alignItems: "center" }}>
-                  <div style={{ textAlign: "center", fontWeight: "bold" }}>{index + 1}</div>
-                  <div><input {...register(`asignaturas.${index}.carrera`)} readOnly type="text" style={{ ...inputStyle, ...readOnlyStyle }} /></div>
-                  <div><input {...register(`asignaturas.${index}.materia`)} readOnly type="text" style={{ ...inputStyle, ...readOnlyStyle }} /></div>
-                  <div><input {...register(`asignaturas.${index}.codigo`)} readOnly type="text" style={{ ...inputStyle, ...readOnlyStyle }} /></div>
-                  <div><input {...register(`asignaturas.${index}.paralelo`)} readOnly type="text" style={{ ...inputStyle, ...readOnlyStyle }} /></div>
-                  <div><input {...register(`asignaturas.${index}.estudiantes`)} type="number" min="0" onKeyDown={bloquearCaracteresInvalidos} style={inputStyle} /></div>
-                  <div><input {...register(`asignaturas.${index}.asistencia`)} type="number" min="0" onKeyDown={bloquearCaracteresInvalidos} style={inputStyle} /></div>
-                  <div><input {...register(`asignaturas.${index}.aprobados`)} type="number" min="0" onKeyDown={bloquearCaracteresInvalidos} style={inputStyle} /></div>
-                  <div><input {...register(`asignaturas.${index}.reprobados`)} type="number" min="0" onKeyDown={bloquearCaracteresInvalidos} style={inputStyle} /></div>
-                  <div style={{ display: "flex", justifyContent: "center" }}><input {...register(`asignaturas.${index}.tiene_pae`)} type="checkbox" style={{ transform: "scale(1.3)", cursor: "pointer" }} /></div>
-                </div>
-              ))}
-            </div>
-          </div>
+    {/* 2. Filas: Se cambió el cuarto valor de 70px a 90px */}
+    {fields.map((item, index) => (
+      <div key={item.id} style={{ display: "grid", gridTemplateColumns: "40px 1.5fr 2fr 90px 70px 70px 70px 70px 70px 50px", gap: "5px", marginBottom: "8px", alignItems: "center" }}>
+        <div style={{ textAlign: "center", fontWeight: "bold" }}>{index + 1}</div>
+        <div><input {...register(`asignaturas.${index}.carrera`)} readOnly type="text" style={{ ...inputStyle, ...readOnlyStyle }} /></div>
+        <div><input {...register(`asignaturas.${index}.materia`)} readOnly type="text" style={{ ...inputStyle, ...readOnlyStyle }} /></div>
+        <div><input {...register(`asignaturas.${index}.codigo`)} readOnly type="text" style={{ ...inputStyle, ...readOnlyStyle, textAlign: "center" }} /></div>
+        <div><input {...register(`asignaturas.${index}.paralelo`)} readOnly type="text" style={{ ...inputStyle, ...readOnlyStyle, textAlign: "center" }} /></div>
+        <div><input {...register(`asignaturas.${index}.estudiantes`)} type="number" min="0" onKeyDown={bloquearCaracteresInvalidos} style={inputStyle} /></div>
+        <div><input {...register(`asignaturas.${index}.asistencia`)} type="number" min="0" onKeyDown={bloquearCaracteresInvalidos} style={inputStyle} /></div>
+        <div><input {...register(`asignaturas.${index}.aprobados`)} type="number" min="0" onKeyDown={bloquearCaracteresInvalidos} style={inputStyle} /></div>
+        <div><input {...register(`asignaturas.${index}.reprobados`)} type="number" min="0" onKeyDown={bloquearCaracteresInvalidos} style={inputStyle} /></div>
+        <div style={{ display: "flex", justifyContent: "center" }}><input {...register(`asignaturas.${index}.tiene_pae`)} type="checkbox" style={{ transform: "scale(1.3)", cursor: "pointer" }} /></div>
+      </div>
+    ))}
+  </div>
+</div>
         </fieldset>
 
         {/* ================= FILTRO DE MATERIAS AGRUPADAS ================= */}
@@ -670,7 +791,7 @@ export default function NuevoInformePage() {
               {/* ARCHIVOS DE LA ASIGNATURA (SÍLABO Y PARALELOS) */}
               <div style={{ padding: "15px", backgroundColor: "#f8fafc", borderRadius: "6px", border: "1px solid #cbd5e1", marginBottom: "20px", marginTop: "15px" }}>
                 <label style={{ display: "block", fontWeight: "bold", color: "#334155", marginBottom: "10px", fontSize: "1.1em" }}>
-                  Cargar Archivos de la Asignatura <span style={{fontSize: "0.75em", fontWeight: "normal", color: "#64748b"}}>(Solo PDF, Máx. 2MB)</span>
+                  Cargar Archivos de la Asignatura <span style={{fontSize: "0.75em", fontWeight: "normal", color: "#64748b"}}>(Solo PDF, Máx. {configSistema.pesoMaximoMB}MB)</span>
                 </label>
 
                 <div style={{ marginBottom: "20px", paddingBottom: "15px", borderBottom: "1px dashed #cbd5e1" }}>
@@ -678,11 +799,11 @@ export default function NuevoInformePage() {
                   {!esSoloLectura && (
                     <select value="" onChange={(e) => { const val = e.target.value; if(val) document.getElementById(`hidden-input-${val}`)?.click(); }} style={selectMenu}>
                       <option value="" disabled>Seleccione un documento...</option>
-                      <option value={`asignaturas.${pIdx}.silabo_evidencia`}>Sílabo</option>
+                      <option value={`asignaturas.${pIdx}.silabo_evidencia`}>Sílabo (Obligatorio)</option>
                     </select>
                   )}
                   <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                    <EvidenciaHiddenUploader name={`asignaturas.${pIdx}.silabo_evidencia`} label="Sílabo" watch={watch} setValue={setValue} esSoloLectura={esSoloLectura} />
+                    <EvidenciaHiddenUploader name={`asignaturas.${pIdx}.silabo_evidencia`} label="Sílabo" watch={watch} setValue={setValue} esSoloLectura={esSoloLectura} pesoMaximoMB={configSistema.pesoMaximoMB} />
                   </div>
                 </div>
 
@@ -695,30 +816,30 @@ export default function NuevoInformePage() {
                       {!esSoloLectura && (
                         <select value="" onChange={(e) => { const val = e.target.value; if(val) document.getElementById(`hidden-input-${val}`)?.click(); }} style={{ ...selectMenu, marginBottom: "10px" }}>
                           <option value="" disabled>Cargar evidencia de paralelo...</option>
-                          <option value={`asignaturas.${idx}.seguimiento_evidencia`}>Seguimiento Sílabo </option>
-                          <option value={`asignaturas.${idx}.asistencia_evidencia`}>Asistencia </option>
-                          <option value={`asignaturas.${idx}.notas_evidencia`}>Notas </option>
+                          <option value={`asignaturas.${idx}.seguimiento_evidencia`}>Seguimiento Sílabo (Obligatorio)</option>
+                          <option value={`asignaturas.${idx}.asistencia_evidencia`}>Asistencia (Obligatorio)</option>
+                          <option value={`asignaturas.${idx}.notas_evidencia`}>Notas (Obligatorio)</option>
                           <option value={`asignaturas.${idx}.indiv_evidencia`}>Trabajos Individuales</option>
                           <option value={`asignaturas.${idx}.grupales_evidencia`}>Trabajos Grupales</option>
                           <option value={`asignaturas.${idx}.refuerzo_evidencia`}>Refuerzo</option>
-                          <option value={`asignaturas.${idx}.sumativa1_evidencia`}>Evidencia Sumativa 1 </option>
-                          <option value={`asignaturas.${idx}.sumativa_final_evidencia`}>Evidencia Sumativa final </option>
-                          <option value={`asignaturas.${idx}.recuperacion_evidencia`}>Evidencia Recuperación </option>
+                          <option value={`asignaturas.${idx}.sumativa1_evidencia`}>Evidencia Sumativa 1 (Obligatorio)</option>
+                          <option value={`asignaturas.${idx}.sumativa_final_evidencia`}>Evidencia Sumativa final (Obligatorio)</option>
+                          <option value={`asignaturas.${idx}.recuperacion_evidencia`}>Evidencia Recuperación (Obligatorio)</option>
                           {watchAsignaturas[idx]?.tiene_pae && <option value={`asignaturas.${idx}.pae_evidencia`}>Evidencia PAE </option>}
                         </select>
                       )}
 
                       <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
-                        <EvidenciaHiddenUploader name={`asignaturas.${idx}.seguimiento_evidencia`} label="Seguimiento Sílabo" watch={watch} setValue={setValue} esSoloLectura={esSoloLectura} />
-                        <EvidenciaHiddenUploader name={`asignaturas.${idx}.asistencia_evidencia`} label="Asistencia" watch={watch} setValue={setValue} esSoloLectura={esSoloLectura} />
-                        <EvidenciaHiddenUploader name={`asignaturas.${idx}.notas_evidencia`} label="Notas" watch={watch} setValue={setValue} esSoloLectura={esSoloLectura} />
-                        <EvidenciaHiddenUploader name={`asignaturas.${idx}.indiv_evidencia`} label="Tra. Individuales" watch={watch} setValue={setValue} esSoloLectura={esSoloLectura} />
-                        <EvidenciaHiddenUploader name={`asignaturas.${idx}.grupales_evidencia`} label="Tra. Grupales" watch={watch} setValue={setValue} esSoloLectura={esSoloLectura} />
-                        <EvidenciaHiddenUploader name={`asignaturas.${idx}.refuerzo_evidencia`} label="Refuerzo" watch={watch} setValue={setValue} esSoloLectura={esSoloLectura} />
-                        <EvidenciaHiddenUploader name={`asignaturas.${idx}.sumativa1_evidencia`} label="Evidencia Sumativa 1" watch={watch} setValue={setValue} esSoloLectura={esSoloLectura} />
-                        <EvidenciaHiddenUploader name={`asignaturas.${idx}.sumativa_final_evidencia`} label="Evidencia Sumativa final" watch={watch} setValue={setValue} esSoloLectura={esSoloLectura} />
-                        <EvidenciaHiddenUploader name={`asignaturas.${idx}.recuperacion_evidencia`} label="Evidencia Recuperación" watch={watch} setValue={setValue} esSoloLectura={esSoloLectura} />
-                        {watchAsignaturas[idx]?.tiene_pae && <EvidenciaHiddenUploader name={`asignaturas.${idx}.pae_evidencia`} label="Evidencia PAE" watch={watch} setValue={setValue} esSoloLectura={esSoloLectura} />}
+                        <EvidenciaHiddenUploader name={`asignaturas.${idx}.seguimiento_evidencia`} label="Seguimiento Sílabo" watch={watch} setValue={setValue} esSoloLectura={esSoloLectura} pesoMaximoMB={configSistema.pesoMaximoMB} />
+                        <EvidenciaHiddenUploader name={`asignaturas.${idx}.asistencia_evidencia`} label="Asistencia" watch={watch} setValue={setValue} esSoloLectura={esSoloLectura} pesoMaximoMB={configSistema.pesoMaximoMB} />
+                        <EvidenciaHiddenUploader name={`asignaturas.${idx}.notas_evidencia`} label="Notas" watch={watch} setValue={setValue} esSoloLectura={esSoloLectura} pesoMaximoMB={configSistema.pesoMaximoMB} />
+                        <EvidenciaHiddenUploader name={`asignaturas.${idx}.indiv_evidencia`} label="Tra. Individuales" watch={watch} setValue={setValue} esSoloLectura={esSoloLectura} pesoMaximoMB={configSistema.pesoMaximoMB} />
+                        <EvidenciaHiddenUploader name={`asignaturas.${idx}.grupales_evidencia`} label="Tra. Grupales" watch={watch} setValue={setValue} esSoloLectura={esSoloLectura} pesoMaximoMB={configSistema.pesoMaximoMB} />
+                        <EvidenciaHiddenUploader name={`asignaturas.${idx}.refuerzo_evidencia`} label="Refuerzo" watch={watch} setValue={setValue} esSoloLectura={esSoloLectura} pesoMaximoMB={configSistema.pesoMaximoMB} />
+                        <EvidenciaHiddenUploader name={`asignaturas.${idx}.sumativa1_evidencia`} label="Evidencia Sumativa 1" watch={watch} setValue={setValue} esSoloLectura={esSoloLectura} pesoMaximoMB={configSistema.pesoMaximoMB} />
+                        <EvidenciaHiddenUploader name={`asignaturas.${idx}.sumativa_final_evidencia`} label="Evidencia Sumativa final" watch={watch} setValue={setValue} esSoloLectura={esSoloLectura} pesoMaximoMB={configSistema.pesoMaximoMB} />
+                        <EvidenciaHiddenUploader name={`asignaturas.${idx}.recuperacion_evidencia`} label="Evidencia Recuperación" watch={watch} setValue={setValue} esSoloLectura={esSoloLectura} pesoMaximoMB={configSistema.pesoMaximoMB} />
+                        {watchAsignaturas[idx]?.tiene_pae && <EvidenciaHiddenUploader name={`asignaturas.${idx}.pae_evidencia`} label="Evidencia PAE" watch={watch} setValue={setValue} esSoloLectura={esSoloLectura} pesoMaximoMB={configSistema.pesoMaximoMB} />}
                       </div>
                     </div>
                   ))}
@@ -744,7 +865,7 @@ export default function NuevoInformePage() {
                 <label style={{ display: "block", fontWeight: "bold", color: "#0284c7", marginBottom: "10px" }}>📎 Cargar Evidencia de Resultados (Por Paralelo):</label>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "15px" }}>
                   {grupo.indices.map((idx: number) => (
-                    <EvidenciaUploader key={`res_evidencia_${idx}`} label={`Paralelo: ${watchAsignaturas[idx].paralelo}`} name={`asignaturas.${idx}.res_evidencia`} watch={watch} setValue={setValue} esSoloLectura={esSoloLectura} />
+                    <EvidenciaUploader key={`res_evidencia_${idx}`} label={`Paralelo: ${watchAsignaturas[idx].paralelo}`} name={`asignaturas.${idx}.res_evidencia`} watch={watch} setValue={setValue} esSoloLectura={esSoloLectura} pesoMaximoMB={configSistema.pesoMaximoMB} />
                   ))}
                 </div>
               </div>
@@ -773,7 +894,7 @@ export default function NuevoInformePage() {
                 <label style={{ display: "block", fontWeight: "bold", color: "#0284c7", marginBottom: "10px" }}>📎 Cargar Evidencia de Habilidades (Por Paralelo):</label>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "15px" }}>
                   {grupo.indices.map((idx: number) => (
-                    <EvidenciaUploader key={`hab_evidencia_${idx}`} label={`Paralelo: ${watchAsignaturas[idx].paralelo}`} name={`asignaturas.${idx}.hab_evidencia`} watch={watch} setValue={setValue} esSoloLectura={esSoloLectura} />
+                    <EvidenciaUploader key={`hab_evidencia_${idx}`} label={`Paralelo: ${watchAsignaturas[idx].paralelo}`} name={`asignaturas.${idx}.hab_evidencia`} watch={watch} setValue={setValue} esSoloLectura={esSoloLectura} pesoMaximoMB={configSistema.pesoMaximoMB} />
                   ))}
                 </div>
               </div>
@@ -797,10 +918,10 @@ export default function NuevoInformePage() {
               </div>
 
               <div style={{ padding: "15px", backgroundColor: "#e0f2fe", borderRadius: "6px", marginBottom: "20px" }}>
-                <label style={{ display: "block", fontWeight: "bold", color: "#0284c7", marginBottom: "10px" }}>📎 Cargar Evidencia TAC (Por Paralelo):</label>
+                <label style={{ display: "block", fontWeight: "bold", color: "#0284c7", marginBottom: "10px" }}>Cargar Evidencia TAC (Por Paralelo):</label>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "15px" }}>
                   {grupo.indices.map((idx: number) => (
-                    <EvidenciaUploader key={`tac_evidencia_${idx}`} label={`Paralelo: ${watchAsignaturas[idx].paralelo}`} name={`asignaturas.${idx}.tac_evidencia`} watch={watch} setValue={setValue} esSoloLectura={esSoloLectura} />
+                    <EvidenciaUploader key={`tac_evidencia_${idx}`} label={`Paralelo: ${watchAsignaturas[idx].paralelo}`} name={`asignaturas.${idx}.tac_evidencia`} watch={watch} setValue={setValue} esSoloLectura={esSoloLectura} pesoMaximoMB={configSistema.pesoMaximoMB} />
                   ))}
                 </div>
               </div>
