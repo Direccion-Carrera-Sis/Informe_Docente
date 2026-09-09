@@ -29,21 +29,27 @@ export class UsuariosService implements OnModuleInit {
     const adminExiste = await this.usuarioModel.findOne({ rol: 'admin' });
 
     if (!adminExiste) {
-      // Creamos la contraseña por defecto: admin123
-      const passwordEncriptado = await bcrypt.hash('admin123', 10);
+      // 1. Leemos de Docker/Producción, si no existen, usamos los locales por defecto
+      const correoAdmin = process.env.ADMIN_CORREO || 'admin@uce.edu.ec';
+      const passwordAdmin = process.env.ADMIN_CLAVE || 'admin123';
+      const cedulaAdmin = process.env.ADMIN_CEDULA || '0000000000';
+
+      const passwordEncriptado = await bcrypt.hash(passwordAdmin, 10);
 
       const adminDefault = new this.usuarioModel({
-        correo: 'admin@uce.edu.ec',
+        correo: correoAdmin,
         password: passwordEncriptado,
         rol: 'admin',
-        cedula: '0000000000',
+        cedula: cedulaAdmin,
         nombres_completos: 'Administrador del Sistema',
-        periodo_academico: '2026-2026',
+        periodo_academico: process.env.PERIODO_ACTUAL || '2026-2026',
       });
 
       await adminDefault.save();
+
+      // 2. Nunca imprimimos la contraseña real en consola por seguridad en producción
       console.log(
-        '✅ Cuenta de administrador creada exitosamente. Correo: admin@uce.edu.ec | Clave: admin123',
+        `✅ Cuenta de administrador creada exitosamente. Correo: ${correoAdmin}`,
       );
     }
   }

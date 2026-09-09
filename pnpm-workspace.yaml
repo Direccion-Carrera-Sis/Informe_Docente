@@ -1,0 +1,12 @@
+packages:
+  - 'apps/*'
+  - 'packages/*'
+
+allowBuilds:
+  '@parcel/watcher': true
+  bcrypt: true
+  sharp: true
+  unrs-resolver: true
+
+onlyBuiltDependencies:
+  - bcrypt

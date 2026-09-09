@@ -10,9 +10,6 @@ export default function DocenteDashboard() {
   const [usuario, setUsuario] = useState<any>(null);
   const [informes, setInformes] = useState<any[]>([]);
 
-  // 👇 1. Definimos el periodo actual para las validaciones
-  const PERIODO_ACTUAL = "2026-2026";
-
   useEffect(() => {
     const usuarioGuardado = localStorage.getItem("usuario");
     if (usuarioGuardado) {
@@ -27,7 +24,7 @@ export default function DocenteDashboard() {
   const cargarMisInformes = async (cedula: string) => {
     try {
       const respuesta = await fetch(
-        `http://localhost:4000/informes/docente/${cedula}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/informes/docente/${cedula}`
       );
       if (respuesta.ok) {
         const data = await respuesta.json();
@@ -40,16 +37,16 @@ export default function DocenteDashboard() {
 
   const eliminarInforme = async (id: string) => {
     const confirmar = window.confirm(
-      "¿Estás seguro de que deseas eliminar este informe? Esta acción no se puede deshacer.",
+      "¿Estás seguro de que deseas eliminar este informe? Esta acción no se puede deshacer."
     );
     if (!confirmar) return;
 
     try {
       const respuesta = await fetch(
-        `http://localhost:4000/informes/${id}?usuarioId=${usuario?.cedula ?? ""}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/informes/${id}?usuarioId=${usuario?.cedula ?? ""}`,
         {
           method: "DELETE",
-        },
+        }
       );
 
       if (respuesta.ok) {
@@ -65,30 +62,130 @@ export default function DocenteDashboard() {
     }
   };
 
+  const entregarInforme = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+    informe: any 
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (file.type !== "application/pdf") {
+      alert("⚠️ Por favor, sube únicamente un archivo en formato PDF.");
+      event.target.value = "";
+      return;
+    }
+
+    // 👇 1. RECONSTRUIR EL NOMBRE ESPERADO DEL ARCHIVO
+    const periodoLimpio = (informe.periodoAcademico || "26-26").replace(/\//g, "-");
+    const docenteFormateado = (informe.datosEstructurales?.docente_nombre || "ApellidoNombre")
+      .toLowerCase()
+      .split(/\s+/)
+      .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join("")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
+
+    const nombreEsperado = `04_${periodoLimpio}_Informe_Docente_${docenteFormateado}.pdf`;
+
+    // 👇 2. VALIDACIÓN ESTRICTA DEL NOMBRE
+    if (file.name !== nombreEsperado) {
+      alert(`❌ NOMBRE DE ARCHIVO INCORRECTO\n\nSe esperaba: ${nombreEsperado}\nSe recibió: ${file.name}\n\nPor favor, verifique que no haya renombrado el documento o que no tenga números adicionales como "(1)" al final.`);
+      event.target.value = "";
+      return;
+    }
+
+    const confirmar = window.confirm(
+      "¿Estás seguro de entregar el informe final firmado? Una vez entregado, pasará a revisión y ya no podrás editarlo."
+    );
+    
+    if (!confirmar) {
+      event.target.value = "";
+      return;
+    }
+
+    try {
+      const payload = {
+        ...informe, 
+        estado: "Entregado",
+        docenteId: usuario?.cedula, 
+      };
+
+      const formData = new FormData();
+      formData.append("informeData", JSON.stringify(payload));
+      
+      // 👇 3. ENVIAMOS EL ARCHIVO CON SU NOMBRE CORRECTO
+      // (Al usar el prefijo 'archivos_generales_', el backend lo guarda en la carpeta GENERAL)
+      const archivoFirmado = new File([file], nombreEsperado, { type: file.type });
+      formData.append("archivos_generales_firmado", archivoFirmado);
+
+      const respuesta = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/informes/${informe._id}`,
+        {
+          method: "PUT",
+          body: formData,
+        }
+      );
+
+      if (respuesta.ok) {
+        alert("¡Informe firmado y entregado con éxito!");
+        if (usuario?.cedula) cargarMisInformes(usuario.cedula);
+      } else {
+        alert("Hubo un error al intentar cambiar el estado del informe.");
+      }
+    } catch (error: any) {
+      alert("Error de red: " + error.message);
+    } finally {
+      event.target.value = "";
+    }
+  };
+
+  const revertirABorrador = async (informe: any) => {
+    const confirmar = window.confirm(
+      "¿Estás seguro de devolver este informe a estado Borrador? Podrás volver a editarlo y subir un nuevo archivo firmado."
+    );
+    
+    if (!confirmar) return;
+
+    try {
+      const payload = {
+        ...informe,
+        estado: "Borrador",
+        docenteId: usuario?.cedula,
+      };
+
+      const formData = new FormData();
+      formData.append("informeData", JSON.stringify(payload));
+
+      const respuesta = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/informes/${informe._id}`,
+        {
+          method: "PUT",
+          body: formData,
+        }
+      );
+
+      if (respuesta.ok) {
+        alert("¡Informe devuelto a Borrador exitosamente!");
+        if (usuario?.cedula) cargarMisInformes(usuario.cedula);
+      } else {
+        alert("Hubo un error al intentar cambiar el estado del informe.");
+      }
+    } catch (error: any) {
+      alert("Error de red: " + error.message);
+    }
+  };
+
   const cerrarSesion = () => {
     localStorage.removeItem("usuario");
     router.push("/login");
   };
 
-  // 👇 2. Variable que detecta si ya existe un informe para el periodo actual
-  const yaTieneInformeActual = informes.some(
-    (inf: any) => inf.periodoAcademico === PERIODO_ACTUAL,
-  );
-
-  // 👇 3. Función centralizada para manejar los clics de "Nuevo Informe"
   const manejarNuevoInforme = () => {
-    if (yaTieneInformeActual) {
-      alert(
-        `⚠️ Ya tienes un informe creado para el período ${PERIODO_ACTUAL}.\n\nPor favor, utiliza el botón "Ver / Editar" en la tabla para continuar trabajando en él.`,
-      );
-    } else {
-      router.push("/dashboard/docente/nuevo");
-    }
+    router.push("/dashboard/docente/nuevo");
   };
 
   return (
     <div className={styles.container}>
-      {/* BARRA LATERAL */}
       <aside className={styles.sidebar}>
         <h2>Panel Docente</h2>
         <ul style={{ marginTop: "2rem", listStyle: "none", padding: 0 }}>
@@ -102,20 +199,15 @@ export default function DocenteDashboard() {
             Mis Informes
           </li>
           <li style={{ marginBottom: "1rem" }}>
-            {/* 👇 Aplicamos el bloqueo en el enlace del sidebar */}
             <span
               onClick={manejarNuevoInforme}
               style={{
-                color: yaTieneInformeActual ? "#6b7280" : "inherit",
+                color: "inherit",
                 textDecoration: "none",
-                cursor: yaTieneInformeActual ? "not-allowed" : "pointer",
+                cursor: "pointer",
                 display: "block",
               }}
-              title={
-                yaTieneInformeActual
-                  ? "Ya existe un informe para este periodo"
-                  : "Crear nuevo informe"
-              }
+              title="Crear nuevo informe"
             >
               + Nuevo Informe
             </span>
@@ -148,7 +240,6 @@ export default function DocenteDashboard() {
         </button>
       </aside>
 
-      {/* CONTENIDO PRINCIPAL */}
       <main className={styles.mainContent}>
         <h1 className={styles.title}>
           Bienvenido, Docente {usuario?.nombres || ""}
@@ -165,23 +256,18 @@ export default function DocenteDashboard() {
           >
             <h3 style={{ margin: 0 }}>Informes Recientes</h3>
 
-            {/* 👇 Aplicamos el bloqueo en el botón principal */}
             <button
               onClick={manejarNuevoInforme}
               style={{
                 padding: "0.6rem 1.2rem",
-                background: yaTieneInformeActual ? "#9ca3af" : "#2563eb",
+                background: "#2563eb",
                 color: "white",
                 border: "none",
                 borderRadius: "4px",
-                cursor: yaTieneInformeActual ? "not-allowed" : "pointer",
+                cursor: "pointer",
                 fontWeight: "bold",
               }}
-              title={
-                yaTieneInformeActual
-                  ? "Solo puedes tener un informe activo por periodo"
-                  : "Crear nuevo informe"
-              }
+              title="Crear nuevo informe"
             >
               + Nuevo Informe
             </button>
@@ -189,7 +275,7 @@ export default function DocenteDashboard() {
 
           {informes.length === 0 ? (
             <p style={{ color: "#777" }}>
-              Aún no has creado ningún informe para este período académico.
+              Aún no has creado ningún informe.
             </p>
           ) : (
             <div style={{ overflowX: "auto" }}>
@@ -232,8 +318,6 @@ export default function DocenteDashboard() {
                     >
                       Fecha de Creación
                     </th>
-
-                    {/* 👇 NUEVA CABECERA DE PROGRESO */}
                     <th
                       style={{
                         padding: "12px",
@@ -243,7 +327,6 @@ export default function DocenteDashboard() {
                     >
                       Progreso
                     </th>
-
                     <th
                       style={{
                         padding: "12px",
@@ -256,131 +339,182 @@ export default function DocenteDashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  {informes.map((informe) => (
-                    <tr
-                      key={informe._id}
-                      style={{ borderBottom: "1px solid #e5e7eb" }}
-                    >
-                      <td style={{ padding: "12px" }}>
-                        {informe.periodoAcademico}
-                      </td>
-                      <td style={{ padding: "12px" }}>
-                        <span
+                  {informes.map((informe) => {
+                    const progresoVisual = Math.round(informe.progreso || 0);
+
+                    return (
+                      <tr
+                        key={informe._id}
+                        style={{ borderBottom: "1px solid #e5e7eb" }}
+                      >
+                        <td style={{ padding: "12px" }}>
+                          {informe.periodoAcademico}
+                        </td>
+                        <td style={{ padding: "12px" }}>
+                          <span
+                            style={{
+                              backgroundColor:
+                                informe.estado === "Entregado"
+                                  ? "#10b981"
+                                  : "#f59e0b",
+                              color: "#fff",
+                              padding: "4px 8px",
+                              borderRadius: "12px",
+                              fontSize: "12px",
+                              fontWeight: "bold",
+                            }}
+                          >
+                            {informe.estado}
+                          </span>
+                        </td>
+                        <td
                           style={{
-                            backgroundColor: "#f59e0b",
-                            color: "#fff",
-                            padding: "4px 8px",
-                            borderRadius: "12px",
-                            fontSize: "12px",
-                            fontWeight: "bold",
+                            padding: "12px",
+                            fontSize: "0.9rem",
+                            color: "#6b7280",
                           }}
                         >
-                          {informe.estado}
-                        </span>
-                      </td>
-                      <td
-                        style={{
-                          padding: "12px",
-                          fontSize: "0.9rem",
-                          color: "#6b7280",
-                        }}
-                      >
-                        {new Date(informe.createdAt).toLocaleDateString()}
-                      </td>
+                          {new Date(informe.createdAt).toLocaleDateString()}
+                        </td>
 
-                      {/* 👇 NUEVA CELDA CON LA BARRA DE PROGRESO */}
-                      <td
-                        style={{
-                          padding: "12px",
-                          textAlign: "center",
-                          width: "150px",
-                        }}
-                      >
-                        <div
+                        <td
                           style={{
-                            display: "flex",
-                            flexDirection: "column",
-                            alignItems: "center",
-                            gap: "5px",
+                            padding: "12px",
+                            textAlign: "center",
+                            width: "150px",
                           }}
                         >
                           <div
                             style={{
-                              width: "100%",
-                              backgroundColor: "#e5e7eb",
-                              borderRadius: "10px",
-                              height: "8px",
-                              overflow: "hidden",
+                              display: "flex",
+                              flexDirection: "column",
+                              alignItems: "center",
+                              gap: "5px",
                             }}
                           >
                             <div
                               style={{
-                                width: `${informe.progreso || 0}%`,
-                                backgroundColor:
-                                  informe.progreso === 100
-                                    ? "#2ecc71"
-                                    : "#3498db",
-                                height: "100%",
-                                transition: "width 0.3s ease",
+                                width: "100%",
+                                backgroundColor: "#e5e7eb",
+                                borderRadius: "10px",
+                                height: "8px",
+                                overflow: "hidden",
                               }}
-                            />
+                            >
+                              <div
+                                style={{
+                                  width: `${progresoVisual}%`,
+                                  backgroundColor:
+                                    progresoVisual >= 99
+                                      ? "#2ecc71"
+                                      : "#3498db",
+                                  height: "100%",
+                                  transition: "width 0.3s ease",
+                                }}
+                              />
+                            </div>
+                            <span
+                              style={{
+                                fontSize: "0.85em",
+                                color: "#555",
+                                fontWeight: "bold",
+                              }}
+                            >
+                              {progresoVisual}%
+                            </span>
                           </div>
-                          <span
+                        </td>
+
+                        <td
+                          style={{
+                            padding: "12px",
+                            display: "flex",
+                            gap: "10px",
+                            justifyContent: "center",
+                            alignItems: "center",
+                          }}
+                        >
+                          {progresoVisual >= 99 && informe.estado === "Borrador" && (
+                            <label
+                              style={{
+                                backgroundColor: "#10b981",
+                                color: "white",
+                                border: "none",
+                                padding: "6px 12px",
+                                borderRadius: "4px",
+                                cursor: "pointer",
+                                fontSize: "0.9em",
+                                fontWeight: "bold",
+                                margin: 0,
+                              }}
+                            >
+                              Subir Firmado
+                              <input
+                                type="file"
+                                accept="application/pdf"
+                                style={{ display: "none" }}
+                                onChange={(e) => entregarInforme(e, informe)}
+                              />
+                            </label>
+                          )}
+
+                          {informe.estado === "Entregado" && (
+                            <button
+                              onClick={() => revertirABorrador(informe)}
+                              style={{
+                                backgroundColor: "#f59e0b",
+                                color: "white",
+                                border: "none",
+                                padding: "6px 12px",
+                                borderRadius: "4px",
+                                cursor: "pointer",
+                                fontSize: "0.9em",
+                              }}
+                              title="Deshacer entrega para editar o subir de nuevo"
+                            >
+                              Deshacer Entrega
+                            </button>
+                          )}
+
+                          <button
+                            onClick={() =>
+                              router.push(
+                                `/dashboard/docente/nuevo?id=${informe._id}`
+                              )
+                            }
                             style={{
-                              fontSize: "0.85em",
-                              color: "#555",
-                              fontWeight: "bold",
+                              backgroundColor: "#3498db",
+                              color: "white",
+                              border: "none",
+                              padding: "6px 12px",
+                              borderRadius: "4px",
+                              cursor: "pointer",
+                              fontSize: "0.9em",
                             }}
                           >
-                            {informe.progreso || 0}%
-                          </span>
-                        </div>
-                      </td>
+                            {informe.estado === "Entregado"
+                              ? "Ver Informe"
+                              : "Ver / Editar"}
+                          </button>
 
-                      <td
-                        style={{
-                          padding: "12px",
-                          display: "flex",
-                          gap: "10px",
-                          justifyContent: "center",
-                        }}
-                      >
-                        <button
-                          onClick={() =>
-                            router.push(
-                              `/dashboard/docente/nuevo?id=${informe._id}`,
-                            )
-                          }
-                          style={{
-                            backgroundColor: "#3498db",
-                            color: "white",
-                            border: "none",
-                            padding: "6px 12px",
-                            borderRadius: "4px",
-                            cursor: "pointer",
-                            fontSize: "0.9em",
-                          }}
-                        >
-                          Ver / Editar
-                        </button>
-
-                        <button
-                          onClick={() => eliminarInforme(informe._id)}
-                          style={{
-                            backgroundColor: "#e74c3c",
-                            color: "white",
-                            border: "none",
-                            padding: "6px 12px",
-                            borderRadius: "4px",
-                            cursor: "pointer",
-                            fontSize: "0.9em",
-                          }}
-                        >
-                          Eliminar
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
+                          <button
+                            onClick={() => eliminarInforme(informe._id)}
+                            style={{
+                              backgroundColor: "#e74c3c",
+                              color: "white",
+                              border: "none",
+                              padding: "6px 12px",
+                              borderRadius: "4px",
+                              cursor: "pointer",
+                              fontSize: "0.9em",
+                            }}
+                          >
+                            Eliminar
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

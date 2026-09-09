@@ -1,0 +1,12 @@
+node_modules
+.git
+.gitignore
+.wslconfig
+dist
+build
+.next
+.turbo
+*.log
+Dockerfile
+docker-compose.yml
+README.md
