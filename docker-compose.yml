@@ -40,14 +40,14 @@ services:
       dockerfile: apps/web/Dockerfile
       args:
         - NEXT_PUBLIC_BASE_PATH=/qa
-        - NEXT_PUBLIC_API_URL=http://10.3.20.122/qa/api # IP corregida
+        - NEXT_PUBLIC_API_URL=http://10.3.0.104/qa/api # IP corregida
     container_name: informes_web_qa
     restart: always
     ports:
       - "8081:3000"
     environment:
       - NEXT_PUBLIC_BASE_PATH=/qa
-      - NEXT_PUBLIC_API_URL=http://10.3.20.122/qa/api # IP corregida
+      - NEXT_PUBLIC_API_URL=http://10.3.0.104/qa/api # IP corregida
     depends_on:
       - api_qa
       
@@ -90,14 +90,14 @@ services:
       dockerfile: apps/web/Dockerfile
       args:
         - NEXT_PUBLIC_BASE_PATH=/prod
-        - NEXT_PUBLIC_API_URL=http://10.3.20.122/prod/api
+        - NEXT_PUBLIC_API_URL=http://10.3.0.104/prod/api
     container_name: informes_web_prod
     restart: always
     ports:
       - "8083:3000"
     environment:
       - NEXT_PUBLIC_BASE_PATH=/prod
-      - NEXT_PUBLIC_API_URL=http://10.3.20.122/prod/api
+      - NEXT_PUBLIC_API_URL=http://10.3.0.104/prod/api
     depends_on:
       - api_prod
 
