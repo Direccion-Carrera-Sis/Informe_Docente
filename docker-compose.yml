@@ -38,14 +38,14 @@ services:
       dockerfile: apps/web/Dockerfile
       args:
         - NEXT_PUBLIC_BASE_PATH=/qa
-        - NEXT_PUBLIC_API_URL=http://localhost/qa/api
+        - NEXT_PUBLIC_API_URL=http://10.3.3.114/qa/api
     container_name: informes_web_qa
     restart: always
     ports:
       - "8081:3000"
     environment:
       - NEXT_PUBLIC_BASE_PATH=/qa
-      - NEXT_PUBLIC_API_URL=http://localhost/qa/api
+      - NEXT_PUBLIC_API_URL=http://10.3.3.114/qa/api
     depends_on:
       - api_qa
       
@@ -88,14 +88,14 @@ services:
       dockerfile: apps/web/Dockerfile
       args:
         - NEXT_PUBLIC_BASE_PATH=/prod
-        - NEXT_PUBLIC_API_URL=http://localhost/prod/api
+        - NEXT_PUBLIC_API_URL=http://10.3.3.114/prod/api
     container_name: informes_web_prod
     restart: always
     ports:
       - "8083:3000"
     environment:
       - NEXT_PUBLIC_BASE_PATH=/prod
-      - NEXT_PUBLIC_API_URL=http://localhost/prod/api
+      - NEXT_PUBLIC_API_URL=http://10.3.3.114/prod/api
     depends_on:
       - api_prod
 

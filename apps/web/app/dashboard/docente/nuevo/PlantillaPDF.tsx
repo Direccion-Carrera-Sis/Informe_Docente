@@ -264,6 +264,7 @@ export const PlantillaPDF = ({ datos, logos }: { datos: InformeData, logos?: { f
             <View style={styles.tableRowLast}><Text style={[styles.tableCellLast, { width: "100%", textAlign: "center" }]}>N/A</Text></View>
           )}
         </View>
+        {(!materiasAgrupadas || materiasAgrupadas.length === 0) && <Text style={styles.legendText}>* N/A: No Aplica</Text>}
 
         {/* EVIDENCIAS GENERALES DE LA SECCIÓN 1 */}
         <View style={styles.filesContainer} wrap={false}>
@@ -300,6 +301,7 @@ export const PlantillaPDF = ({ datos, logos }: { datos: InformeData, logos?: { f
                     <Text style={[styles.tableCellLast, { width: "35%", textAlign: "left" }]}>Ac: {asig.res_acciones || "N/A"}{"\n"}Pr: {asig.res_propuestas || "N/A"}{"\n"}Cu: {asig.res_cumplimiento || "N/A"}</Text>
                   </View>
                 </View>
+                <Text style={styles.legendText}>*C (Criterios), I (Instrumento), A (Actividades), L (Logro), Ac (Acciones), Pr (Propuestas), Cu (Cumplimiento).</Text>
               </View>
 
               {/* Tabla B */}
@@ -319,6 +321,7 @@ export const PlantillaPDF = ({ datos, logos }: { datos: InformeData, logos?: { f
                     <Text style={[styles.tableCellLast, { width: "35%", textAlign: "left" }]}>Ac: {asig.hab_acciones || "N/A"}{"\n"}Pr: {asig.hab_propuestas || "N/A"}{"\n"}Cu: {asig.hab_cumplimiento || "N/A"}</Text>
                   </View>
                 </View>
+                <Text style={styles.legendText}>*C (Criterios), I (Instrumento), A (Actividades), L (Logro), Ac (Acciones), Pr (Propuestas), Cu (Cumplimiento).</Text>
               </View>
 
               {/* Tabla C */}
@@ -336,6 +339,7 @@ export const PlantillaPDF = ({ datos, logos }: { datos: InformeData, logos?: { f
                     <Text style={[styles.tableCellLast, { width: "35%", textAlign: "left" }]}>Ac: {asig.tac_acciones || "N/A"}{"\n"}Pr: {asig.tac_propuestas || "N/A"}{"\n"}Cu: {asig.tac_cumplimiento || "N/A"}</Text>
                   </View>
                 </View>
+                <Text style={styles.legendText}>*H (Herramienta), T (Tipo), A (Actividades), L (Logro), Ac (Acciones), Pr (Propuestas), Cu (Cumplimiento).</Text>
               </View>
 
               {/* EVIDENCIAS DE LA ASIGNATURA */}
@@ -379,6 +383,7 @@ export const PlantillaPDF = ({ datos, logos }: { datos: InformeData, logos?: { f
             })
           ) : <View style={styles.tableRowLast}><Text style={[styles.tableCellLast, { width: "100%", textAlign: "center" }]}>N/A</Text></View>}
         </View>
+        {(!datos?.titulaciones_asignadas || datos.titulaciones_asignadas.length === 0) && <Text style={styles.legendText}>* N/A: No Aplica</Text>}
 
         <Text style={styles.subSectionTitle}>Trabajos de titulación (lector)</Text>
         <View style={styles.table}>
@@ -402,6 +407,7 @@ export const PlantillaPDF = ({ datos, logos }: { datos: InformeData, logos?: { f
             })
           ) : <View style={styles.tableRowLast}><Text style={[styles.tableCellLast, { width: "100%", textAlign: "center" }]}>N/A</Text></View>}
         </View>
+        {(!datos?.titulaciones_lector || datos.titulaciones_lector.length === 0) && <Text style={styles.legendText}>* N/A: No Aplica</Text>}
 
         {/* 4. PRÁCTICAS */}
         <Text style={styles.sectionTitle}>4. Prácticas Preprofesionales (Tutor)</Text>
@@ -426,6 +432,7 @@ export const PlantillaPDF = ({ datos, logos }: { datos: InformeData, logos?: { f
             })
           ) : <View style={styles.tableRowLast}><Text style={[styles.tableCellLast, { width: "100%", textAlign: "center" }]}>N/A</Text></View>}
         </View>
+        {(!datos?.practicas || datos.practicas.length === 0) && <Text style={styles.legendText}>* N/A: No Aplica</Text>}
 
         {/* 5. VINCULACIÓN */}
         <Text style={styles.sectionTitle}>5. Vinculación con la Sociedad</Text>
@@ -445,6 +452,7 @@ export const PlantillaPDF = ({ datos, logos }: { datos: InformeData, logos?: { f
             </View>
           ) : <View style={styles.tableRowLast}><Text style={[styles.tableCellLast, { width: "100%", textAlign: "center" }]}>N/A</Text></View>}
         </View>
+        {!datos?.vinc_nombre && <Text style={styles.legendText}>* N/A: No Aplica</Text>}
 
         {/* 6. INVESTIGACIÓN Y PUBLICACIONES */}
         <Text style={styles.sectionTitle}>6. Investigación y Publicaciones</Text>
@@ -470,6 +478,7 @@ export const PlantillaPDF = ({ datos, logos }: { datos: InformeData, logos?: { f
             })
           ) : <View style={styles.tableRowLast}><Text style={[styles.tableCellLast, { width: "100%", textAlign: "center" }]}>N/A</Text></View>}
         </View>
+        {(!datos?.proyectos_investigacion || datos.proyectos_investigacion.length === 0) && <Text style={styles.legendText}>* N/A: No Aplica</Text>}
 
         <Text style={styles.subSectionTitle}>Publicaciones y Ponencias Acreditadas</Text>
         <View style={styles.table}>
@@ -495,6 +504,7 @@ export const PlantillaPDF = ({ datos, logos }: { datos: InformeData, logos?: { f
             })
           ) : <View style={styles.tableRowLast}><Text style={[styles.tableCellLast, { width: "100%", textAlign: "center" }]}>N/A</Text></View>}
         </View>
+        {(!datos?.publicaciones || datos.publicaciones.length === 0) && <Text style={styles.legendText}>* N/A: No Aplica</Text>}
 
         {/* 7. DESIGNACIONES Y CIERRE */}
         <Text style={styles.sectionTitle}>7. Designaciones y Cierre</Text>
